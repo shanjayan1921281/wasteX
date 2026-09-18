@@ -8,27 +8,53 @@ export const authService = {
     fullName: string,
     role: UserRole,
     companyName: string,
-    city: string
+    city: string,
+    phone?: string
   ) {
     if (!isSupabaseConfigured()) {
       throw new Error('Supabase is not configured.');
     }
 
+    const cleanEmail = email.trim().toLowerCase();
     const { data: authData, error: authError } = await supabase.auth.signUp({
-      email,
+      email: cleanEmail,
       password,
       options: {
         data: {
-          full_name: fullName,
+          full_name: fullName.trim(),
           role,
-          business_name: companyName,
-          location: city
+          business_name: companyName.trim(),
+          location: city.trim(),
+          phone: phone?.trim() || ''
         }
       }
     });
 
-    if (authError) throw authError;
-    const user = authData.user;
+    if (authError) {
+      if (authError.message?.toLowerCase().includes('rate') || (authError as any).status === 429) {
+        throw new Error('Supabase email rate limit exceeded. If you already created an account, please Sign In instead.');
+      }
+      if (authError.message?.toLowerCase().includes('already registered')) {
+        throw new Error('An account with this email already exists. Please sign in instead.');
+      }
+      throw authError;
+    }
+
+    if (authData.user && Array.isArray(authData.user.identities) && authData.user.identities.length === 0) {
+      throw new Error('An account with this email already exists. Please sign in instead.');
+    }
+
+    let user = authData.user;
+    if (!authData.session && user) {
+      const signInRes = await supabase.auth.signInWithPassword({
+        email: cleanEmail,
+        password
+      });
+      if (signInRes.data?.user) {
+        user = signInRes.data.user;
+      }
+    }
+
     if (!user) throw new Error('User creation failed');
 
     const businessId = `biz-${user.id.slice(0, 8)}`;
@@ -36,12 +62,13 @@ export const authService = {
 
     const { error: profileError } = await supabase.from('profiles').upsert({
       id: user.id,
-      full_name: fullName,
-      email,
+      full_name: fullName.trim(),
+      email: cleanEmail,
       role,
-      business_name: companyName,
+      business_name: companyName.trim(),
       business_id: businessId,
-      location: city,
+      location: city.trim(),
+      phone: phone?.trim() || '',
       is_verified: true,
       status: 'active',
       created_at: now,
@@ -54,11 +81,12 @@ export const authService = {
 
     const profile: UserProfile = {
       uid: user.id,
-      name: fullName,
-      email,
+      name: fullName.trim(),
+      email: cleanEmail,
       role,
       businessId,
-      location: city,
+      phone: phone?.trim() || '',
+      location: city.trim(),
       isVerified: true,
       status: 'active',
       createdAt: now,

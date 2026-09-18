@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { 
   X, 
@@ -47,11 +47,15 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const isSubmittingRef = useRef(false);
 
   if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmittingRef.current || loading) return;
+
+    isSubmittingRef.current = true;
     setError(null);
     setSuccessMsg(null);
     setLoading(true);
@@ -96,6 +100,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       setError(err.message || 'Authentication failed. Please check your credentials.');
     } finally {
       setLoading(false);
+      isSubmittingRef.current = false;
     }
   };
 
@@ -187,8 +192,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 <div className="grid grid-cols-2 gap-2">
                   <button
                     type="button"
+                    disabled={loading}
                     onClick={() => setRole('industry')}
-                    className={`p-3 rounded-xl text-left border transition-all cursor-pointer flex flex-col justify-between ${
+                    className={`p-3 rounded-xl text-left border transition-all cursor-pointer flex flex-col justify-between disabled:opacity-60 ${
                       role === 'industry'
                         ? 'bg-emerald-50/80 text-emerald-900 border-emerald-500 ring-2 ring-emerald-500/20 shadow-xs'
                         : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100/70'
@@ -203,8 +209,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
                   <button
                     type="button"
+                    disabled={loading}
                     onClick={() => setRole('dealer')}
-                    className={`p-3 rounded-xl text-left border transition-all cursor-pointer flex flex-col justify-between ${
+                    className={`p-3 rounded-xl text-left border transition-all cursor-pointer flex flex-col justify-between disabled:opacity-60 ${
                       role === 'dealer'
                         ? 'bg-teal-50/80 text-teal-900 border-teal-500 ring-2 ring-teal-500/20 shadow-xs'
                         : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100/70'
@@ -219,8 +226,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
                   <button
                     type="button"
+                    disabled={loading}
                     onClick={() => setRole('recycler')}
-                    className={`p-3 rounded-xl text-left border transition-all cursor-pointer flex flex-col justify-between ${
+                    className={`p-3 rounded-xl text-left border transition-all cursor-pointer flex flex-col justify-between disabled:opacity-60 ${
                       role === 'recycler'
                         ? 'bg-emerald-50/80 text-emerald-900 border-emerald-500 ring-2 ring-emerald-500/20 shadow-xs'
                         : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100/70'
@@ -235,8 +243,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
                   <button
                     type="button"
+                    disabled={loading}
                     onClick={() => setRole('consumer')}
-                    className={`p-3 rounded-xl text-left border transition-all cursor-pointer flex flex-col justify-between ${
+                    className={`p-3 rounded-xl text-left border transition-all cursor-pointer flex flex-col justify-between disabled:opacity-60 ${
                       role === 'consumer'
                         ? 'bg-emerald-50/80 text-emerald-900 border-emerald-500 ring-2 ring-emerald-500/20 shadow-xs'
                         : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100/70'
@@ -260,10 +269,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     <input
                       type="text"
                       required
+                      disabled={loading}
                       value={name}
                       onChange={(e) => setName(e.target.value)}
                       placeholder="e.g. Ramesh Kumar"
-                      className="w-full pl-10 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 focus:outline-none focus:border-emerald-500 focus:bg-white transition-colors"
+                      className="w-full pl-10 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 focus:outline-none focus:border-emerald-500 focus:bg-white transition-colors disabled:opacity-60"
                     />
                   </div>
                 </div>
@@ -276,10 +286,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                       <input
                         type="text"
                         required
+                        disabled={loading}
                         value={companyName}
                         onChange={(e) => setCompanyName(e.target.value)}
                         placeholder="e.g. Kongu Textiles Ltd"
-                        className="w-full pl-10 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 focus:outline-none focus:border-emerald-500 focus:bg-white transition-colors"
+                        className="w-full pl-10 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 focus:outline-none focus:border-emerald-500 focus:bg-white transition-colors disabled:opacity-60"
                       />
                     </div>
                   </div>
@@ -294,10 +305,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     <input
                       type="text"
                       required
+                      disabled={loading}
                       value={city}
                       onChange={(e) => setCity(e.target.value)}
                       placeholder="e.g. Coimbatore, Tiruppur"
-                      className="w-full pl-10 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 focus:outline-none focus:border-emerald-500 focus:bg-white transition-colors"
+                      className="w-full pl-10 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 focus:outline-none focus:border-emerald-500 focus:bg-white transition-colors disabled:opacity-60"
                     />
                   </div>
                 </div>
@@ -308,10 +320,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     <Phone className="w-4 h-4 absolute left-3.5 top-3 text-slate-400" />
                     <input
                       type="tel"
+                      disabled={loading}
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
                       placeholder="+91 98421..."
-                      className="w-full pl-10 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 focus:outline-none focus:border-emerald-500 focus:bg-white transition-colors"
+                      className="w-full pl-10 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 focus:outline-none focus:border-emerald-500 focus:bg-white transition-colors disabled:opacity-60"
                     />
                   </div>
                 </div>
@@ -326,10 +339,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               <input
                 type="email"
                 required
+                disabled={loading}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="name@company.com"
-                className="w-full pl-10 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 focus:outline-none focus:border-emerald-500 focus:bg-white transition-colors"
+                className="w-full pl-10 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 focus:outline-none focus:border-emerald-500 focus:bg-white transition-colors disabled:opacity-60"
               />
             </div>
           </div>
@@ -341,8 +355,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 {mode === 'login' && (
                   <button
                     type="button"
+                    disabled={loading}
                     onClick={() => { setMode('forgot'); setError(null); setSuccessMsg(null); }}
-                    className="text-xs text-emerald-700 hover:text-emerald-800 font-semibold cursor-pointer hover:underline"
+                    className="text-xs text-emerald-700 hover:text-emerald-800 font-semibold cursor-pointer hover:underline disabled:opacity-60"
                   >
                     Forgot password?
                   </button>
@@ -353,16 +368,18 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 <input
                   type={showPassword ? 'text' : 'password'}
                   required
+                  disabled={loading}
                   minLength={6}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full pl-10 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 focus:outline-none focus:border-emerald-500 focus:bg-white transition-colors"
+                  className="w-full pl-10 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 focus:outline-none focus:border-emerald-500 focus:bg-white transition-colors disabled:opacity-60"
                 />
                 <button
                   type="button"
+                  disabled={loading}
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-3 text-slate-400 hover:text-slate-600 cursor-pointer"
+                  className="absolute right-3 top-3 text-slate-400 hover:text-slate-600 cursor-pointer disabled:opacity-60"
                   title={showPassword ? 'Hide password' : 'Show password'}
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}

@@ -198,56 +198,92 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     city: string,
     phone?: string
   ) => {
+    const cleanEmail = email.trim().toLowerCase();
     const now = new Date().toISOString();
 
     if (!isSupabaseConfigured()) {
       throw new Error('Database connection is not configured.');
     }
 
+    // Perform exactly ONE signUp request
     const { data, error } = await supabase.auth.signUp({
-      email,
+      email: cleanEmail,
       password: pass,
       options: {
         data: {
-          full_name: name,
+          full_name: name.trim(),
           role,
-          business_name: companyName,
-          location: city,
-          phone: phone || ''
+          business_name: companyName.trim(),
+          location: city.trim(),
+          phone: phone?.trim() || ''
         }
       }
     });
 
-    if (error) throw error;
-    const user = data.user;
-    if (!user) throw new Error('Registration failed');
+    if (error) {
+      if (error.message?.toLowerCase().includes('rate') || (error as any).status === 429) {
+        throw new Error('Supabase email rate limit exceeded. If you already created an account, please Sign In instead.');
+      }
+      if (error.message?.toLowerCase().includes('already registered')) {
+        throw new Error('An account with this email already exists. Please sign in instead.');
+      }
+      throw error;
+    }
+
+    // Check if user already exists (Supabase returns empty identities array for existing users on signUp)
+    if (data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
+      throw new Error('An account with this email already exists. Please sign in instead.');
+    }
+
+    let user = data.user;
+    let session = data.session;
+
+    // If session was not immediately returned (email confirmation disabled in Supabase), sign in to establish active session
+    if (!session && user) {
+      const signInRes = await supabase.auth.signInWithPassword({
+        email: cleanEmail,
+        password: pass
+      });
+      if (signInRes.data?.session) {
+        session = signInRes.data.session;
+        user = signInRes.data.user || user;
+      }
+    }
+
+    if (!user) {
+      throw new Error('Registration failed. Please check your credentials and try again.');
+    }
 
     const businessId = `biz-${user.id.slice(0, 8)}`;
 
-    // Write profile to Supabase
-    await supabase.from('profiles').upsert({
+    // Write / upsert profile to Supabase profiles table
+    const { error: profileError } = await supabase.from('profiles').upsert({
       id: user.id,
-      full_name: name,
-      email,
+      full_name: name.trim(),
+      email: cleanEmail,
       role,
-      business_name: companyName,
+      business_name: companyName.trim(),
       business_id: businessId,
-      location: city,
-      phone: phone || '',
+      location: city.trim(),
+      phone: phone?.trim() || '',
       is_verified: true,
       status: 'active',
       created_at: now,
       updated_at: now
     });
 
+    if (profileError) {
+      console.warn('Profile sync notice:', profileError.message);
+    }
+
     const newProfile: UserProfile = {
       uid: user.id,
-      name,
-      email,
+      name: name.trim(),
+      email: cleanEmail,
       role,
       businessId,
-      phone: phone || '',
-      location: city,
+      phone: phone?.trim() || '',
+      location: city.trim(),
       isVerified: true,
       status: 'active',
       createdAt: now,
@@ -257,15 +293,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const newBusiness: BusinessProfile = {
       businessId,
       ownerUserId: user.id,
-      businessName: companyName,
+      businessName: companyName.trim(),
       businessType: role,
       role,
       industryCategory: role === 'industry' ? 'Manufacturing / Processing' : 'Recycling & Secondary Trading',
-      description: `${companyName} operations in ${city}`,
-      phone: phone || '',
-      email,
-      address: `${city} Industrial Zone`,
-      city: city || 'Coimbatore',
+      description: `${companyName.trim()} operations in ${city.trim()}`,
+      phone: phone?.trim() || '',
+      email: cleanEmail,
+      address: `${city.trim()} Industrial Zone`,
+      city: city.trim() || 'Coimbatore',
       state: 'Tamil Nadu',
       country: 'India',
       verificationStatus: 'VERIFIED',
@@ -277,32 +313,44 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setBusinessProfile(newBusiness);
     setCurrentUser(user);
 
-    await logAuditEvent(user.id, role, 'REGISTER_AND_CREATE_BUSINESS', 'user', user.id, { email, role, companyName });
+    await logAuditEvent(user.id, role, 'REGISTER_AND_CREATE_BUSINESS', 'user', user.id, { email: cleanEmail, role, companyName: companyName.trim() });
   };
 
   const loginUser = async (email: string, pass: string) => {
+    const cleanEmail = email.trim().toLowerCase();
     if (!isSupabaseConfigured()) {
       throw new Error('Database connection is not configured.');
     }
 
     const { data, error } = await supabase.auth.signInWithPassword({
-      email,
+      email: cleanEmail,
       password: pass
     });
-    if (error) throw error;
+    if (error) {
+      if (error.message?.toLowerCase().includes('invalid login credentials')) {
+        throw new Error('Invalid email or password. Please check your credentials or create an account.');
+      }
+      throw error;
+    }
     if (data.user) {
       setCurrentUser(data.user);
       await loadUserData(data.user);
-      await logAuditEvent(data.user.id, userProfile?.role || 'industry', 'LOGIN', 'user', data.user.id, { email });
+      await logAuditEvent(data.user.id, userProfile?.role || 'industry', 'LOGIN', 'user', data.user.id, { email: cleanEmail });
     }
   };
 
   const resetPassword = async (email: string) => {
+    const cleanEmail = email.trim().toLowerCase();
     if (!isSupabaseConfigured()) {
       throw new Error('Database connection is not configured.');
     }
-    const { error } = await supabase.auth.resetPasswordForEmail(email);
-    if (error) throw error;
+    const { error } = await supabase.auth.resetPasswordForEmail(cleanEmail);
+    if (error) {
+      if (error.message?.toLowerCase().includes('rate') || (error as any).status === 429) {
+        throw new Error('Password reset email rate limit reached. Please wait a few minutes before trying again.');
+      }
+      throw error;
+    }
   };
 
   const logoutUser = async () => {

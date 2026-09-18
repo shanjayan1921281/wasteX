@@ -30,21 +30,6 @@ export const LandingPage: React.FC<LandingProps> = ({ onNavigate, onOpenAuth }) 
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
-      {/* Top Banner Notice */}
-      <div className="bg-emerald-50 border-b border-emerald-200 px-4 py-2.5 text-xs flex flex-wrap items-center justify-between text-emerald-900 font-medium">
-        <div className="flex items-center gap-2">
-          <span className="flex h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
-          <span>Industrial Scrap & Waste Platform — Turn Factory Waste Into Real Money</span>
-        </div>
-        <div className="flex items-center gap-4">
-          <span className="hidden sm:inline text-slate-600">Active Hubs: Coimbatore • Tiruppur • Erode • Salem</span>
-          <div className="flex items-center gap-1.5 text-emerald-700 font-semibold">
-            <ShieldCheck className="w-4 h-4 text-emerald-600" />
-            <span>AI Verified Quality</span>
-          </div>
-        </div>
-      </div>
-
       {/* Hero Section */}
       <section className="relative px-4 sm:px-6 lg:px-8 pt-12 pb-16 max-w-6xl mx-auto">
         <div className="text-center max-w-3xl mx-auto space-y-6">
