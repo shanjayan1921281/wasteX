@@ -25,7 +25,7 @@ interface LandingProps {
 }
 
 export const LandingPage: React.FC<LandingProps> = ({ onNavigate, onOpenAuth }) => {
-  const { userProfile, switchDemoRole } = useAuth();
+  const { userProfile } = useAuth();
   const [activeTab, setActiveTab] = useState<'all' | 'textile' | 'plastic' | 'metal'>('all');
 
   return (
@@ -105,50 +105,6 @@ export const LandingPage: React.FC<LandingProps> = ({ onNavigate, onOpenAuth }) 
             >
               How It Works
             </button>
-          </div>
-
-          {/* Instant Quick-Demo Access Bar */}
-          <div className="pt-6 border-t border-slate-200 mt-8">
-            <p className="text-xs uppercase tracking-wider text-slate-600 mb-3 font-bold">
-              Try It Immediately (Select A Demo Profile):
-            </p>
-            <div className="flex flex-wrap items-center justify-center gap-3">
-              <button
-                id="quick-demo-industry"
-                onClick={async () => {
-                  await switchDemoRole('industry');
-                  onNavigate('/industry/dashboard');
-                }}
-                className="px-4 py-2 rounded-lg bg-white hover:bg-emerald-50 border border-slate-300 hover:border-emerald-500 text-xs font-semibold text-slate-800 flex items-center gap-2 shadow-sm transition-all cursor-pointer"
-              >
-                <Building2 className="w-4 h-4 text-emerald-600" />
-                <span>Factory Owner (Apex Mills)</span>
-              </button>
-
-              <button
-                id="quick-demo-dealer"
-                onClick={async () => {
-                  await switchDemoRole('dealer');
-                  onNavigate('/dealer/dashboard');
-                }}
-                className="px-4 py-2 rounded-lg bg-white hover:bg-emerald-50 border border-slate-300 hover:border-emerald-500 text-xs font-semibold text-slate-800 flex items-center gap-2 shadow-sm transition-all cursor-pointer"
-              >
-                <Truck className="w-4 h-4 text-teal-600" />
-                <span>Scrap Buyer / Dealer (Vortex)</span>
-              </button>
-
-              <button
-                id="quick-demo-admin"
-                onClick={async () => {
-                  await switchDemoRole('admin');
-                  onNavigate('/admin/dashboard');
-                }}
-                className="px-4 py-2 rounded-lg bg-white hover:bg-amber-50 border border-slate-300 hover:border-amber-500 text-xs font-semibold text-slate-800 flex items-center gap-2 shadow-sm transition-all cursor-pointer"
-              >
-                <ShieldCheck className="w-4 h-4 text-amber-600" />
-                <span>Manager / Admin View</span>
-              </button>
-            </div>
           </div>
         </div>
       </section>
@@ -429,67 +385,52 @@ export const LandingPage: React.FC<LandingProps> = ({ onNavigate, onOpenAuth }) 
         </div>
       </section>
 
-      {/* Signature Demo Scenario Spotlight */}
+      {/* Verified Marketplace & Circular Trading Overview */}
       <section className="px-4 sm:px-6 lg:px-8 py-16 max-w-6xl mx-auto">
         <div className="bg-emerald-50/70 rounded-2xl border border-emerald-300 p-6 sm:p-8 shadow-sm">
           <div className="flex flex-wrap items-center justify-between gap-4 mb-6 pb-4 border-b border-emerald-200">
             <div>
               <span className="text-xs font-bold uppercase tracking-wider text-emerald-800 px-2.5 py-1 rounded bg-emerald-100 border border-emerald-300">
-                REAL EXAMPLE FROM OUR NETWORK
+                CIRCULAR SCRAP TRADING
               </span>
               <h3 className="text-xl sm:text-2xl font-bold text-slate-900 mt-2">
-                500 kg Cotton Textile Waste → Tiruppur Yarn Mill
+                Connect Directly with Verified Industrial Processors & Recyclers
               </h3>
             </div>
             <div className="flex items-center gap-3">
               <span className="text-xs px-3 py-1.5 rounded-full bg-emerald-600 text-white font-bold flex items-center gap-1.5 shadow-xs">
                 <CheckCircle2 className="w-4 h-4" />
-                94% Match Score
+                Verified Network
               </span>
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
             <div className="space-y-2 bg-white p-4 rounded-xl border border-emerald-200 shadow-2xs">
-              <span className="text-xs text-slate-500 uppercase font-bold">1. Seller Factory</span>
-              <h4 className="font-bold text-slate-900 text-base">Apex Spinning & Weaving</h4>
-              <p className="text-xs text-slate-600">Coimbatore, Tamil Nadu</p>
-              <div className="pt-2 text-xs text-emerald-700 font-medium">
-                • 500 kg Comber Noil & Selvage<br />
-                • Clean Grade A Industrial Scrap<br />
-                • Dry condition (&lt; 5% moisture)
-              </div>
+              <span className="text-xs text-slate-500 uppercase font-bold">1. Accurate Valuation</span>
+              <h4 className="font-bold text-slate-900 text-base">Lab-Standard AI Valuation</h4>
+              <p className="text-xs text-slate-600">Determine composition purity, recovery yields, and market rates before listing.</p>
             </div>
 
             <div className="space-y-2 bg-white p-4 rounded-xl border border-emerald-200 shadow-2xs">
-              <span className="text-xs text-slate-500 uppercase font-bold">2. Value Check</span>
-              <h4 className="font-bold text-slate-900 text-base">Scrap Report #01</h4>
-              <p className="text-xs text-slate-600">96% Pure Cotton Cellulose</p>
-              <div className="pt-2 text-xs text-emerald-700 font-medium">
-                • Best use: Regenerated Yarn Spinning<br />
-                • 7 Active Buyer Matches<br />
-                • High demand in Tiruppur
-              </div>
+              <span className="text-xs text-slate-500 uppercase font-bold">2. Transparent Matching</span>
+              <h4 className="font-bold text-slate-900 text-base">Proximity & Compatibility</h4>
+              <p className="text-xs text-slate-600">Match with registered scrap buyers and recyclers based on logistics radius and material specs.</p>
             </div>
 
             <div className="space-y-2 bg-white p-4 rounded-xl border border-emerald-200 shadow-2xs">
-              <span className="text-xs text-slate-500 uppercase font-bold">3. Purchase Deal</span>
-              <h4 className="font-bold text-slate-900 text-base">Vortex Circular Polymers</h4>
-              <p className="text-xs text-slate-600">Tiruppur, Tamil Nadu</p>
-              <div className="pt-2 text-xs text-emerald-700 font-medium">
-                • Buying 400 kg @ ₹44/kg<br />
-                • Accepted by Factory Owner<br />
-                • Status: TRUCK PICKUP BOOKED
-              </div>
+              <span className="text-xs text-slate-500 uppercase font-bold">3. Chain-of-Custody</span>
+              <h4 className="font-bold text-slate-900 text-base">Traceable Transactions</h4>
+              <p className="text-xs text-slate-600">Audit-ready documentation, weighbridge tracking, and verified ESG recycling credits.</p>
             </div>
           </div>
 
           <div className="mt-6 pt-4 border-t border-emerald-200 flex flex-wrap items-center justify-between gap-4">
             <p className="text-xs text-slate-600 font-medium">
-              Ready to see live scrap listings and current buyers?
+              Ready to explore live scrap listings and submit your industrial inventory?
             </p>
             <button
-              id="view-demo-scenario-btn"
+              id="view-marketplace-btn"
               onClick={() => onNavigate('/marketplace')}
               className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm transition-all flex items-center gap-2 shadow-sm cursor-pointer"
             >

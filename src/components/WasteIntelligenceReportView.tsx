@@ -19,8 +19,8 @@ import {
   Check,
   Loader2
 } from 'lucide-react';
-import { doc, setDoc } from 'firebase/firestore';
-import { db } from '../lib/firebase';
+import { marketplaceService } from '../services/dealerService';
+import { wasteService } from '../services/wasteService';
 import type { WasteIntelligenceReport, WasteAssessment, WasteListing, EligibilityResult, RecyclerProfile, DealerProfile } from '../types';
 import { logAuditEvent, createNotification } from '../lib/auditAndNotifications';
 import { ReportSourceAttributionView } from './ReportSourceAttributionView';
@@ -78,7 +78,7 @@ export const WasteIntelligenceReportView: React.FC<ReportViewProps> = ({
           materialCategory: report.materialCategory,
           quantity: report.quantity,
           unit: report.unit,
-          wasteOwnerId: userProfile?.uid || 'demo-owner',
+          wasteOwnerId: userProfile?.uid || '',
           wasteOwnerName: report.industryName,
           wasteOwnerLocation: report.location,
           recyclerId: recycler.recyclerId,
@@ -118,9 +118,9 @@ export const WasteIntelligenceReportView: React.FC<ReportViewProps> = ({
         listingId,
         assessmentId: report.assessmentId,
         reportId: report.reportId,
-        sellerBusinessId: businessProfile?.businessId || 'biz-seller-default',
+        sellerBusinessId: businessProfile?.businessId || userProfile?.uid || '',
         sellerBusinessName: report.industryName,
-        sellerUserId: userProfile?.uid || 'user-seller-default',
+        sellerUserId: userProfile?.uid || '',
         wasteName: report.wasteName,
         materialCategory: report.materialCategory,
         wasteType: assessment?.wasteType || 'Secondary Byproduct',
@@ -147,16 +147,16 @@ export const WasteIntelligenceReportView: React.FC<ReportViewProps> = ({
         updatedAt: now
       };
 
-      // Write to Firestore
-      await setDoc(doc(db, 'wasteListings', listingId), newListing);
+      // Write to Supabase / Service
+      await marketplaceService.saveListing(newListing);
 
       // Update assessment status to LISTED
-      if (report.assessmentId) {
-        await setDoc(
-          doc(db, 'wasteAssessments', report.assessmentId), 
-          { status: 'LISTED', updatedAt: now }, 
-          { merge: true }
-        );
+      if (report.assessmentId && assessment) {
+        await wasteService.createSubmission({
+          ...assessment,
+          status: 'LISTED',
+          updatedAt: now
+        });
       }
 
       if (userProfile) {

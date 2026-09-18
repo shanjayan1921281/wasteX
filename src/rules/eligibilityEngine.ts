@@ -363,7 +363,7 @@ export const REGISTERED_DEALERS: DealerProfile[] = [
     purchasePriceRange: '₹35 - ₹65 / kg',
     minQuantityKg: 100,
     location: 'Tiruppur / Coimbatore, Tamil Nadu',
-    contactEmail: 'procurement@vortexcircular.demo',
+    contactEmail: 'procurement@vortexcircular.com',
     phone: '+91 98941 77651',
     rating: 4.8
   },
@@ -374,7 +374,7 @@ export const REGISTERED_DEALERS: DealerProfile[] = [
     purchasePriceRange: '₹22 - ₹48 / kg',
     minQuantityKg: 200,
     location: 'Erode, Tamil Nadu',
-    contactEmail: 'buyer@ecoregen.demo',
+    contactEmail: 'buyer@ecoregen.org',
     phone: '+91 97890 12345',
     rating: 4.6
   },
@@ -385,7 +385,7 @@ export const REGISTERED_DEALERS: DealerProfile[] = [
     purchasePriceRange: '₹140 - ₹380 / kg',
     minQuantityKg: 50,
     location: 'Chennai, Tamil Nadu',
-    contactEmail: 'trading@metallorecycle.demo',
+    contactEmail: 'trading@metallorecycle.com',
     phone: '+91 94432 99881',
     rating: 4.9
   }
@@ -399,7 +399,7 @@ export const REGISTERED_RECYCLERS: RecyclerProfile[] = [
     processingCapabilities: ['Mechanical fiber opening', 'Garnetting', 'Open-end rotor re-spinning', 'Non-woven felting'],
     minBatchKg: 200,
     location: 'Coimbatore, Tamil Nadu',
-    contactEmail: 'intake@apexregenerated.demo',
+    contactEmail: 'intake@apexregenerated.com',
     phone: '+91 94432 18922',
     rating: 4.9,
     certifications: ['Global Recycled Standard (GRS)', 'OEKO-TEX Standard 100', 'ISO 14001']
@@ -411,7 +411,7 @@ export const REGISTERED_RECYCLERS: RecyclerProfile[] = [
     processingCapabilities: ['Hot-wash flake production', 'Twin-screw decontamination', 'Repro pellet compounding'],
     minBatchKg: 150,
     location: 'Kurichi Industrial Estate, Coimbatore',
-    contactEmail: 'facility@polycycle.demo',
+    contactEmail: 'facility@polycycle.com',
     phone: '+91 98422 44101',
     rating: 4.7,
     certifications: ['CPCB Authorized Plastic Recycler', 'EPR Authorized Facility']
@@ -423,7 +423,7 @@ export const REGISTERED_RECYCLERS: RecyclerProfile[] = [
     processingCapabilities: ['Hydrapulping', 'De-inking', 'Molded fiber protective packaging'],
     minBatchKg: 300,
     location: 'Perundurai, Tamil Nadu',
-    contactEmail: 'pulp@ecokraft.demo',
+    contactEmail: 'pulp@ecokraft.com',
     phone: '+91 94881 77620',
     rating: 4.8,
     certifications: ['FSC Recycled 100%', 'Zero Liquid Discharge']

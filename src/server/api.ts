@@ -492,163 +492,13 @@ Generate a crisp, professional 2-3 sentence AI explanation describing why this m
   // HACKATHON CORE LIFECYCLE: DATA STORES & REST ENDPOINTS
   // ==========================================================================
 
-  // In-memory persistent stores with realistic seed data
+  // In-memory persistent stores (start completely clean, no demo/sample data)
   const inMemorySubmissions = new Map<string, any>();
   const inMemoryReports = new Map<string, any>();
   const inMemoryEligibility = new Map<string, EligibilityResult>();
   const inMemoryRecycleRequests = new Map<string, RecyclingRequest>();
   const inMemoryProducts = new Map<string, RecycledProduct>();
   const inMemoryOrders = new Map<string, ConsumerOrder>();
-
-  // Seed initial recycled products in the Consumer Marketplace
-  const seedProducts: RecycledProduct[] = [
-    {
-      productId: 'prod-01',
-      title: 'EcoLoom Regenerated Cotton Canvas Tote',
-      category: 'Fashion & Apparel',
-      sourceMaterial: '100% Combed Cotton Mill Byproduct',
-      wasteOriginName: 'Apex Spinning Mills Comber Noil',
-      recyclerId: 'recycler-01',
-      recyclerName: 'Apex Regenerated Spinning & Fiber Works',
-      price: 499,
-      currency: 'INR',
-      stock: 85,
-      unit: 'pieces',
-      description: 'Heavyweight, zero-dye natural tote bag spun from high-grade textile comber byproduct. Zero virgin cotton used.',
-      specifications: {
-        'Material Purity': '96% Regenerated Combed Cotton',
-        'Fabric Weight': '380 GSM Heavy Canvas',
-        'Carrying Capacity': 'Up to 15 kg',
-        'Dye Status': 'Undyed / Natural Cotton Hue'
-      },
-      images: [
-        'https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&w=800&q=80'
-      ],
-      environmentalSavings: {
-        co2KgSaved: 4.2,
-        waterLitersSaved: 2700,
-        virginMaterialAvoidedKg: 0.6
-      },
-      featured: true,
-      createdAt: new Date(Date.now() - 86400000 * 3).toISOString()
-    },
-    {
-      productId: 'prod-02',
-      title: 'RePoly Geometric Acoustic Wall Tiles (Pack of 6)',
-      category: 'Home & Living',
-      sourceMaterial: 'Post-Consumer Recycled PET Flakes',
-      wasteOriginName: 'Polymer Extrusion Clean PET Flakes',
-      recyclerId: 'recycler-02',
-      recyclerName: 'PolyCycle Advanced Extrusions',
-      price: 1299,
-      currency: 'INR',
-      stock: 40,
-      unit: 'packs',
-      description: 'Sound-dampening architectural hex wall tiles thermo-compressed from decontaminated post-industrial PET bottle flakes.',
-      specifications: {
-        'NRC Sound Rating': '0.85 (High absorption)',
-        'Tile Dimensions': '30cm x 26cm x 9mm',
-        'Fire Resistance': 'Class B Flame Retardant',
-        'Adhesive Type': 'Peel-and-stick bio adhesive backing'
-      },
-      images: [
-        'https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=800&q=80'
-      ],
-      environmentalSavings: {
-        co2KgSaved: 8.5,
-        waterLitersSaved: 450,
-        virginMaterialAvoidedKg: 1.8
-      },
-      featured: true,
-      createdAt: new Date(Date.now() - 86400000 * 2).toISOString()
-    },
-    {
-      productId: 'prod-03',
-      title: 'EcoKraft Molded Cushioning Laptop Sleeve',
-      category: 'Consumer Goods',
-      sourceMaterial: 'Recycled Corrugated Box Pulp',
-      wasteOriginName: 'Secondary Kraft Packaging Scrap',
-      recyclerId: 'recycler-03',
-      recyclerName: 'EcoKraft Pulp & Packaging Solutions',
-      price: 649,
-      currency: 'INR',
-      stock: 65,
-      unit: 'pieces',
-      description: 'Minimalist, shock-absorbent laptop sleeve molded with water-resistant bio-wax coating from corrugated packaging offcuts.',
-      specifications: {
-        'Compatibility': 'Fits 13" - 15" Laptops',
-        'Impact Cushioning': 'Cellular air-pocket pulp matrix',
-        'Water Repellency': 'Hydrophobic carnauba wax shield',
-        'Biodegradability': '100% compostable at end-of-life'
-      },
-      images: [
-        'https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?auto=format&fit=crop&w=800&q=80'
-      ],
-      environmentalSavings: {
-        co2KgSaved: 2.1,
-        waterLitersSaved: 900,
-        virginMaterialAvoidedKg: 0.5
-      },
-      featured: false,
-      createdAt: new Date(Date.now() - 86400000).toISOString()
-    }
-  ];
-
-  seedProducts.forEach(p => inMemoryProducts.set(p.productId, p));
-
-  // Seed sample recycling requests in various stages
-  const seedRecycleRequests: RecyclingRequest[] = [
-    {
-      requestId: 'req-recycle-01',
-      wasteAssessmentId: 'sample-waste-textile-01',
-      wasteName: 'Cotton Textile Waste (Comber Noil)',
-      materialCategory: 'Textile',
-      quantity: 350,
-      unit: 'kg',
-      wasteOwnerUserId: 'demo-user-industry-01',
-      wasteOwnerName: 'Apex Spinning & Weaving Mills',
-      wasteOwnerLocation: 'Coimbatore, Tamil Nadu',
-      recyclerId: 'recycler-01',
-      recyclerName: 'Apex Regenerated Spinning & Fiber Works',
-      status: 'PROCESSING',
-      stageHistory: [
-        {
-          stage: 'SUBMITTED',
-          timestamp: new Date(Date.now() - 86400000 * 4).toISOString(),
-          note: 'Waste owner submitted 350 kg lot for mechanical rotor recycling.',
-          updatedBy: 'Apex Spinning Mills'
-        },
-        {
-          stage: 'ACCEPTED',
-          timestamp: new Date(Date.now() - 86400000 * 3).toISOString(),
-          note: 'Recycler accepted lot after AI report audit showed 94% cellulose purity.',
-          updatedBy: 'Apex Regenerated Fiber'
-        },
-        {
-          stage: 'COLLECTED',
-          timestamp: new Date(Date.now() - 86400000 * 2).toISOString(),
-          note: 'Bales received at Tiruppur sorting depot. Logistics verified.',
-          updatedBy: 'Dispatch Driver TN-38-9012'
-        },
-        {
-          stage: 'PROCESSING',
-          timestamp: new Date(Date.now() - 86400000 * 1).toISOString(),
-          note: 'Currently in mechanical fiber opener & garnetting line.',
-          updatedBy: 'Plant Supervisor K. Mohan'
-        }
-      ],
-      processingDetails: {
-        processMethod: 'Dry garnetting, fiber de-dusting, and open-end rotor re-spinning',
-        yieldPercentage: 92,
-        processingStartDate: new Date(Date.now() - 86400000 * 1).toISOString().split('T')[0],
-        outputMaterial: 'Count 20s Regenerated Cotton Rotor Yarn'
-      },
-      createdAt: new Date(Date.now() - 86400000 * 4).toISOString(),
-      updatedAt: new Date(Date.now() - 86400000 * 1).toISOString()
-    }
-  ];
-
-  seedRecycleRequests.forEach(r => inMemoryRecycleRequests.set(r.requestId, r));
 
   // --------------------------------------------------------------------------
   // 1. Waste Upload: Submit waste for analysis
@@ -957,9 +807,9 @@ Respond with a strictly valid JSON object adhering to this structure:
         materialCategory: materialCategory || 'General',
         quantity: Number(quantity) || 100,
         unit: unit || 'kg',
-        wasteOwnerUserId: wasteOwnerUserId || 'owner-demo',
+        wasteOwnerUserId: wasteOwnerUserId || '',
         wasteOwnerName: wasteOwnerName || 'Industrial Facility',
-        wasteOwnerLocation: wasteOwnerLocation || 'Coimbatore',
+        wasteOwnerLocation: wasteOwnerLocation || '',
         recyclerId,
         recyclerName: recyclerName || 'Certified Recycler',
         status: 'SUBMITTED',
@@ -1187,15 +1037,15 @@ Respond with a strictly valid JSON object adhering to this structure:
       const orderId = `ord-${Date.now()}`;
       const newOrder: ConsumerOrder = {
         orderId,
-        consumerUserId: consumerUserId || 'consumer-demo-01',
-        consumerName: consumerName || 'Arun Kumar',
-        consumerEmail: consumerEmail || 'consumer@wastexchange.demo',
+        consumerUserId: consumerUserId || '',
+        consumerName: consumerName || 'Consumer',
+        consumerEmail: consumerEmail || '',
         shippingAddress: shippingAddress || {
-          street: '142 Green Avenue, RS Puram',
-          city: 'Coimbatore',
-          state: 'Tamil Nadu',
-          pincode: '641002',
-          phone: '+91 98421 55670'
+          street: '',
+          city: '',
+          state: '',
+          pincode: '',
+          phone: ''
         },
         items,
         totalAmount,

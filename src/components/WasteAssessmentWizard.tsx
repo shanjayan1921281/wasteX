@@ -20,8 +20,8 @@ import {
   Plus,
   Minus
 } from 'lucide-react';
-import { doc, setDoc } from 'firebase/firestore';
-import { db } from '../lib/firebase';
+import { wasteService } from '../services/wasteService';
+import { analysisService } from '../services/analysisService';
 import type { WasteAssessment, WasteIntelligenceReport } from '../types';
 import { logAuditEvent, createNotification } from '../lib/auditAndNotifications';
 
@@ -264,12 +264,14 @@ export const WasteAssessmentWizard: React.FC<AssessmentWizardProps> = ({
         createdAt: now
       };
 
-      // Persist to Cloud Firestore with defensive fallback
+      // Persist to Supabase with defensive caching fallback
       try {
-        await setDoc(doc(db, 'wasteAssessments', assessmentId), assessmentData);
-        await setDoc(doc(db, 'wasteReports', reportId), generatedReport);
+        await wasteService.createSubmission(assessmentData);
+        await analysisService.saveReport(generatedReport);
+        localStorage.setItem(`wasteReport_${reportId}`, JSON.stringify(generatedReport));
+        localStorage.setItem(`wasteAssessment_${assessmentId}`, JSON.stringify(assessmentData));
       } catch (dbErr) {
-        console.warn('Notice: Firestore save encountered non-blocking warning, caching locally:', dbErr);
+        console.warn('Notice: Supabase save encountered non-blocking warning, caching locally:', dbErr);
         try {
           localStorage.setItem(`wasteReport_${reportId}`, JSON.stringify(generatedReport));
           localStorage.setItem(`wasteAssessment_${assessmentId}`, JSON.stringify(assessmentData));

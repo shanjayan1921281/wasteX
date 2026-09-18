@@ -15,8 +15,7 @@ import { ConsumerMarketplaceView } from './components/ConsumerMarketplaceView';
 import { ConsumerDashboard } from './components/ConsumerDashboard';
 import { TestRunnerModal } from './components/TestRunnerModal';
 import { AboutView } from './components/AboutView';
-import { doc, getDoc } from 'firebase/firestore';
-import { db } from './lib/firebase';
+import { analysisService } from './services/analysisService';
 import type { WasteIntelligenceReport, WasteAssessment } from './types';
 
 export default function App() {
@@ -33,9 +32,16 @@ export default function App() {
   // Load report by id if route requests it
   const handleOpenReportById = async (reportId: string) => {
     try {
-      const snap = await getDoc(doc(db, 'wasteReports', reportId));
-      if (snap.exists()) {
-        setActiveReport(snap.data() as WasteIntelligenceReport);
+      const cached = localStorage.getItem(`wasteReport_${reportId}`);
+      if (cached) {
+        setActiveReport(JSON.parse(cached));
+        setCurrentRoute('/report');
+        return;
+      }
+      const reports = await analysisService.getReports();
+      const found = reports.find(r => r.reportId === reportId || r.assessmentId === reportId);
+      if (found) {
+        setActiveReport(found);
         setCurrentRoute('/report');
       }
     } catch (err) {
@@ -47,6 +53,43 @@ export default function App() {
     setAuthModalMode(mode);
     setAuthModalOpen(true);
   };
+
+  // Automatically redirect authenticated users to their dashboard if on landing page
+  useEffect(() => {
+    if (userProfile && currentRoute === '/') {
+      if (userProfile.role === 'dealer') {
+        setCurrentRoute('/dealer/dashboard');
+      } else if (userProfile.role === 'recycler') {
+        setCurrentRoute('/recycler/dashboard');
+      } else if (userProfile.role === 'consumer') {
+        setCurrentRoute('/consumer/marketplace');
+      } else if (userProfile.role === 'admin') {
+        setCurrentRoute('/admin/dashboard');
+      } else {
+        setCurrentRoute('/industry/dashboard');
+      }
+    }
+  }, [userProfile]);
+
+  // Protect internal routes from unauthenticated access
+  useEffect(() => {
+    if (!loading && !userProfile) {
+      const protectedRoutes = [
+        '/industry/dashboard',
+        '/industry/waste/new',
+        '/dealer/dashboard',
+        '/recycler/dashboard',
+        '/admin/dashboard',
+        '/consumer/dashboard',
+        '/transactions'
+      ];
+      if (protectedRoutes.includes(currentRoute)) {
+        setCurrentRoute('/');
+        setAuthModalMode('login');
+        setAuthModalOpen(true);
+      }
+    }
+  }, [currentRoute, userProfile, loading]);
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col selection:bg-emerald-100 selection:text-emerald-900 font-sans">

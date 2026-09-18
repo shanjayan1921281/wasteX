@@ -1,15 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { 
-  collection, 
-  getDocs, 
-  query, 
-  where, 
-  doc, 
-  setDoc 
-} from 'firebase/firestore';
-import { db } from '../lib/firebase';
-import { 
   Recycle, 
   Search, 
   Filter, 
@@ -32,6 +23,7 @@ import type {
 } from '../types';
 import { calculateDeterministicMatch } from '../lib/matchingEngine';
 import { logAuditEvent, createNotification } from '../lib/auditAndNotifications';
+import { marketplaceService, dealerService, transactionService } from '../services/dealerService';
 
 interface MarketplaceProps {
   onOpenReport: (reportId: string) => void;
@@ -74,26 +66,12 @@ export const MarketplaceView: React.FC<MarketplaceProps> = ({
     setLoading(true);
     try {
       // 1. Fetch wasteListings
-      const listSnap = await getDocs(collection(db, 'wasteListings'));
-      const listArr: WasteListing[] = [];
-      listSnap.forEach((d) => {
-        const item = d.data() as WasteListing;
-        if (item.status === 'LISTED' || item.status === 'RESERVED') {
-          listArr.push(item);
-        }
-      });
-      setListings(listArr);
+      const listArr = await marketplaceService.getListings();
+      setListings(listArr.filter(item => item.status === 'LISTED' || item.status === 'RESERVED'));
 
       // 2. Fetch dealer requirements
-      const reqSnap = await getDocs(collection(db, 'materialRequirements'));
-      const reqArr: MaterialRequirement[] = [];
-      reqSnap.forEach((d) => {
-        const item = d.data() as MaterialRequirement;
-        if (item.status === 'ACTIVE') {
-          reqArr.push(item);
-        }
-      });
-      setDealerRequirements(reqArr);
+      const reqArr = await dealerService.getRequirements();
+      setDealerRequirements(reqArr.filter(item => item.status === 'ACTIVE'));
     } catch (err) {
       console.error('Error fetching marketplace listings:', err);
     } finally {
@@ -155,8 +133,8 @@ export const MarketplaceView: React.FC<MarketplaceProps> = ({
         updatedAt: now
       };
 
-      // Persist to Cloud Firestore
-      await setDoc(doc(db, 'purchaseRequests', requestId), newRequest);
+      // Persist to Supabase / Service
+      await transactionService.savePurchaseRequest(newRequest);
 
       // Audit and notify seller
       await logAuditEvent(

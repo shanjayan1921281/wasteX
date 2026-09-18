@@ -14,11 +14,12 @@ import {
   Loader2,
   BookOpen
 } from 'lucide-react';
-import { collection, getDocs, updateDoc, doc } from 'firebase/firestore';
-import { db } from '../lib/firebase';
-import type { BusinessProfile, WasteListing, TransactionRecord, AuditLog } from '../types';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 import { AdminKnowledgeBaseConsole } from './AdminKnowledgeBaseConsole';
+import { marketplaceService, transactionService } from '../services/dealerService';
+import { fetchAuditLogs } from '../lib/auditAndNotifications';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import type { BusinessProfile, WasteListing, TransactionRecord, AuditLog } from '../types';
 
 export const AdminDashboard: React.FC = () => {
   const { userProfile } = useAuth();
@@ -32,28 +33,46 @@ export const AdminDashboard: React.FC = () => {
   const loadAdminData = async () => {
     setLoading(true);
     try {
-      // 1. Businesses
-      const bSnap = await getDocs(collection(db, 'businesses'));
-      const bArr: BusinessProfile[] = [];
-      bSnap.forEach(d => bArr.push(d.data() as BusinessProfile));
-      setBusinesses(bArr);
+      // 1. Businesses / Profiles
+      if (isSupabaseConfigured()) {
+        const { data: profs } = await supabase.from('profiles').select('*');
+        if (profs && profs.length > 0) {
+          const bArr: BusinessProfile[] = profs.map(p => ({
+            businessId: p.business_id || `biz-${p.id.slice(0, 8)}`,
+            ownerUserId: p.id,
+            businessName: p.business_name || p.full_name || 'Business Enterprise',
+            businessType: p.role === 'industry' ? 'industry' : 'dealer',
+            role: p.role as any,
+            industryCategory: p.role === 'industry' ? 'Industrial Manufacturing' : 'Recycling Trade',
+            description: `Registered business profile in ${p.location || 'Tamil Nadu'}`,
+            phone: p.phone || '',
+            email: p.email || '',
+            address: `${p.location || 'Coimbatore'} Industrial Estate`,
+            city: p.location || 'Coimbatore',
+            state: 'Tamil Nadu',
+            country: 'India',
+            verificationStatus: p.is_verified ? 'VERIFIED' : 'PENDING',
+            createdAt: p.created_at,
+            updatedAt: p.updated_at
+          }));
+          setBusinesses(bArr);
+        } else {
+          setBusinesses([]);
+        }
+      } else {
+        setBusinesses([]);
+      }
 
       // 2. Listings
-      const lSnap = await getDocs(collection(db, 'wasteListings'));
-      const lArr: WasteListing[] = [];
-      lSnap.forEach(d => lArr.push(d.data() as WasteListing));
+      const lArr = await marketplaceService.getListings();
       setListings(lArr);
 
       // 3. Transactions
-      const tSnap = await getDocs(collection(db, 'transactions'));
-      const tArr: TransactionRecord[] = [];
-      tSnap.forEach(d => tArr.push(d.data() as TransactionRecord));
+      const tArr = await transactionService.getTransactions();
       setTransactions(tArr);
 
       // 4. Audit Logs
-      const logSnap = await getDocs(collection(db, 'auditLogs'));
-      const logArr: AuditLog[] = [];
-      logSnap.forEach(d => logArr.push(d.data() as AuditLog));
+      const logArr = await fetchAuditLogs();
       setAuditLogs(logArr);
     } catch (err) {
       console.error('Error fetching admin data:', err);
@@ -68,11 +87,13 @@ export const AdminDashboard: React.FC = () => {
 
   const handleUpdateBusinessStatus = async (businessId: string, status: 'VERIFIED' | 'SUSPENDED') => {
     try {
-      await updateDoc(doc(db, 'businesses', businessId), {
-        verificationStatus: status,
-        updatedAt: new Date().toISOString()
-      });
-      await loadAdminData();
+      if (isSupabaseConfigured()) {
+        await supabase
+          .from('profiles')
+          .update({ is_verified: status === 'VERIFIED', updated_at: new Date().toISOString() })
+          .eq('business_id', businessId);
+      }
+      setBusinesses(prev => prev.map(b => b.businessId === businessId ? { ...b, verificationStatus: status } : b));
     } catch (err) {
       console.error('Error updating business status:', err);
     }

@@ -14,9 +14,10 @@ import {
   MapPin,
   Truck
 } from 'lucide-react';
-import { collection, getDocs, query, where } from 'firebase/firestore';
-import { db } from '../lib/firebase';
 import type { WasteAssessment, WasteIntelligenceReport, WasteListing, PurchaseRequest } from '../types';
+import { wasteService } from '../services/wasteService';
+import { analysisService } from '../services/analysisService';
+import { marketplaceService, transactionService } from '../services/dealerService';
 
 interface IndustryDashboardProps {
   onStartAssessment: () => void;
@@ -43,27 +44,19 @@ export const IndustryDashboard: React.FC<IndustryDashboardProps> = ({
       setLoading(true);
       try {
         // Fetch all assessments
-        const aSnap = await getDocs(collection(db, 'wasteAssessments'));
-        const aArr: WasteAssessment[] = [];
-        aSnap.forEach(d => aArr.push(d.data() as WasteAssessment));
+        const aArr = await wasteService.getSubmissions();
         setAssessments(aArr);
 
         // Fetch reports
-        const rSnap = await getDocs(collection(db, 'wasteReports'));
-        const rArr: WasteIntelligenceReport[] = [];
-        rSnap.forEach(d => rArr.push(d.data() as WasteIntelligenceReport));
+        const rArr = await analysisService.getReports();
         setReports(rArr);
 
         // Fetch listings
-        const lSnap = await getDocs(collection(db, 'wasteListings'));
-        const lArr: WasteListing[] = [];
-        lSnap.forEach(d => lArr.push(d.data() as WasteListing));
+        const lArr = await marketplaceService.getListings();
         setListings(lArr);
 
         // Fetch purchase requests
-        const reqSnap = await getDocs(collection(db, 'purchaseRequests'));
-        const reqArr: PurchaseRequest[] = [];
-        reqSnap.forEach(d => reqArr.push(d.data() as PurchaseRequest));
+        const reqArr = await transactionService.getPurchaseRequests();
         setRequests(reqArr);
       } catch (err) {
         console.error('Error fetching dashboard data:', err);

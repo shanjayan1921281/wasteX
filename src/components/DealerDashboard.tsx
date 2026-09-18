@@ -12,10 +12,9 @@ import {
   X,
   Loader2
 } from 'lucide-react';
-import { collection, getDocs, doc, setDoc } from 'firebase/firestore';
-import { db } from '../lib/firebase';
 import type { MaterialRequirement, WasteListing, PurchaseRequest } from '../types';
 import { logAuditEvent } from '../lib/auditAndNotifications';
+import { dealerService, transactionService } from '../services/dealerService';
 
 interface DealerDashboardProps {
   onNavigateMarketplace: () => void;
@@ -49,15 +48,11 @@ export const DealerDashboard: React.FC<DealerDashboardProps> = ({
     setLoading(true);
     try {
       // 1. Fetch requirements
-      const reqSnap = await getDocs(collection(db, 'materialRequirements'));
-      const reqArr: MaterialRequirement[] = [];
-      reqSnap.forEach(d => reqArr.push(d.data() as MaterialRequirement));
+      const reqArr = await dealerService.getRequirements();
       setRequirements(reqArr);
 
       // 2. Fetch purchase requests made
-      const prSnap = await getDocs(collection(db, 'purchaseRequests'));
-      const prArr: PurchaseRequest[] = [];
-      prSnap.forEach(d => prArr.push(d.data() as PurchaseRequest));
+      const prArr = await transactionService.getPurchaseRequests();
       setMyRequests(prArr);
     } catch (err) {
       console.error('Error fetching dealer data:', err);
@@ -97,7 +92,7 @@ export const DealerDashboard: React.FC<DealerDashboardProps> = ({
         updatedAt: now
       };
 
-      await setDoc(doc(db, 'materialRequirements', requirementId), newReq);
+      await dealerService.saveRequirement(newReq);
 
       if (userProfile) {
         await logAuditEvent(

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useAuth } from '../context/AuthContext';
 import { 
   ShoppingBag, 
   Search, 
@@ -18,6 +19,7 @@ import {
 import type { RecycledProduct, CartItem, ConsumerOrder } from '../types';
 
 export const ConsumerMarketplaceView: React.FC = () => {
+  const { userProfile } = useAuth();
   const [products, setProducts] = useState<RecycledProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -31,10 +33,10 @@ export const ConsumerMarketplaceView: React.FC = () => {
   const [orderComplete, setOrderComplete] = useState<ConsumerOrder | null>(null);
 
   // Checkout form
-  const [name, setName] = useState('Arun Kumar');
-  const [email, setEmail] = useState('arun.consumer@example.com');
-  const [phone, setPhone] = useState('+91 98421 55670');
-  const [address, setAddress] = useState('142 Green Avenue, RS Puram, Coimbatore, Tamil Nadu - 641002');
+  const [name, setName] = useState(userProfile?.name || '');
+  const [email, setEmail] = useState(userProfile?.email || '');
+  const [phone, setPhone] = useState('');
+  const [address, setAddress] = useState(userProfile?.location || '');
   const [placingOrder, setPlacingOrder] = useState(false);
 
   const categories = ['All', 'Fashion & Apparel', 'Home & Living', 'Consumer Goods', 'Packaging', 'Industrial Feedstock'];
@@ -116,7 +118,7 @@ export const ConsumerMarketplaceView: React.FC = () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          consumerUserId: 'consumer-demo-01',
+          consumerUserId: userProfile?.uid || '',
           consumerName: name,
           consumerEmail: email,
           shippingAddress: {

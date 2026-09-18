@@ -1,17 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { 
-  collection, 
-  getDocs, 
-  query, 
-  where, 
-  doc, 
-  updateDoc,
-  setDoc,
-  orderBy
-} from 'firebase/firestore';
-import { db } from '../lib/firebase';
-import { 
   Truck, 
   CheckCircle2, 
   Clock, 
@@ -27,6 +16,7 @@ import {
 } from 'lucide-react';
 import type { PurchaseRequest, TransactionRecord } from '../types';
 import { logAuditEvent, createNotification } from '../lib/auditAndNotifications';
+import { transactionService, marketplaceService } from '../services/dealerService';
 
 export const TransactionsView: React.FC = () => {
   const { userProfile, businessProfile } = useAuth();
@@ -40,15 +30,11 @@ export const TransactionsView: React.FC = () => {
     setLoading(true);
     try {
       // 1. Fetch Purchase Requests
-      const reqSnap = await getDocs(collection(db, 'purchaseRequests'));
-      const reqList: PurchaseRequest[] = [];
-      reqSnap.forEach((d) => reqList.push(d.data() as PurchaseRequest));
+      const reqList = await transactionService.getPurchaseRequests();
       setPurchaseRequests(reqList);
 
       // 2. Fetch Transactions
-      const txSnap = await getDocs(collection(db, 'transactions'));
-      const txList: TransactionRecord[] = [];
-      txSnap.forEach((d) => txList.push(d.data() as TransactionRecord));
+      const txList = await transactionService.getTransactions();
       setTransactions(txList);
     } catch (err) {
       console.error('Error fetching transaction records:', err);
@@ -97,19 +83,16 @@ export const TransactionsView: React.FC = () => {
         updatedAt: now
       };
 
-      await setDoc(doc(db, 'transactions', transactionId), newTransaction);
+      await transactionService.saveTransaction(newTransaction);
 
       // 2. Update Request Status to ACCEPTED
-      await updateDoc(doc(db, 'purchaseRequests', request.requestId), {
-        status: 'ACCEPTED',
+      const updatedReq = {
+        ...request,
+        status: 'ACCEPTED' as const,
         transactionId,
         updatedAt: now
-      });
-
-      // 3. Update Listing Available Quantity
-      const listingRef = doc(db, 'wasteListings', request.listingId);
-      // Optional decrement if doc exists
-      await setDoc(listingRef, { status: 'RESERVED', updatedAt: now }, { merge: true });
+      };
+      await transactionService.savePurchaseRequest(updatedReq);
 
       // 4. Audit & Notify Buyer
       if (userProfile) {
@@ -147,10 +130,12 @@ export const TransactionsView: React.FC = () => {
     setActionLoading(true);
     try {
       const now = new Date().toISOString();
-      await updateDoc(doc(db, 'purchaseRequests', request.requestId), {
-        status: 'REJECTED',
+      const updatedReq = {
+        ...request,
+        status: 'REJECTED' as const,
         updatedAt: now
-      });
+      };
+      await transactionService.savePurchaseRequest(updatedReq);
 
       if (userProfile) {
         await createNotification(
@@ -189,17 +174,15 @@ export const TransactionsView: React.FC = () => {
         }
       ];
 
-      const updates: any = {
+      const updatedTx: TransactionRecord = {
+        ...tx,
         status: nextStatus,
         timeline: updatedTimeline,
-        updatedAt: now
+        updatedAt: now,
+        ...(nextStatus === 'COMPLETED' ? { completedAt: now } : {})
       };
 
-      if (nextStatus === 'COMPLETED') {
-        updates.completedAt = now;
-      }
-
-      await updateDoc(doc(db, 'transactions', tx.transactionId), updates);
+      await transactionService.saveTransaction(updatedTx);
 
       if (userProfile) {
         await logAuditEvent(
