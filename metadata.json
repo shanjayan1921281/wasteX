@@ -1,0 +1,6 @@
+{
+  "name": "WasteXchange",
+  "description": "AI-powered industrial waste intelligence and B2B waste exchange platform. One industry's waste can be another industry's resource.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

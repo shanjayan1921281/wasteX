@@ -1,0 +1,204 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User account profile with role-based access control",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "Unique user ID" },
+        "name": { "type": "string", "description": "Full name" },
+        "email": { "type": "string", "format": "email", "description": "User email address" },
+        "role": { "type": "string", "enum": ["industry", "dealer", "admin"], "description": "Access control role" },
+        "businessId": { "type": "string", "description": "Associated business profile ID" },
+        "phone": { "type": "string", "description": "Phone contact" },
+        "location": { "type": "string", "description": "City or industrial zone" },
+        "isVerified": { "type": "boolean", "description": "Whether user KYC is verified" },
+        "status": { "type": "string", "enum": ["active", "suspended", "pending"], "description": "Account status" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Creation timestamp" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Last update timestamp" }
+      },
+      "required": ["uid", "email", "role"]
+    },
+    "Business": {
+      "title": "Business",
+      "description": "Registered manufacturing facility or recycling aggregator profile",
+      "type": "object",
+      "properties": {
+        "businessId": { "type": "string", "description": "Unique business identifier" },
+        "ownerUserId": { "type": "string", "description": "Owner user account ID" },
+        "businessName": { "type": "string", "description": "Commercial trading name" },
+        "businessType": { "type": "string", "enum": ["industry", "dealer", "both"], "description": "Type of operation" },
+        "industryCategory": { "type": "string", "description": "Sector category" },
+        "description": { "type": "string", "description": "Operational description" },
+        "phone": { "type": "string", "description": "Contact phone number" },
+        "email": { "type": "string", "format": "email", "description": "Official business email" },
+        "address": { "type": "string", "description": "Street / industrial zone address" },
+        "city": { "type": "string", "description": "City" },
+        "state": { "type": "string", "description": "State / province" },
+        "country": { "type": "string", "description": "Country" },
+        "verificationStatus": { "type": "string", "enum": ["PENDING", "VERIFIED", "REJECTED"], "description": "KYC status" },
+        "isDemo": { "type": "boolean", "description": "Whether this is demo sample data" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["businessId", "businessName", "businessType"]
+    },
+    "WasteAssessment": {
+      "title": "WasteAssessment",
+      "description": "Industrial waste intake record with image evidence and chemical parameters",
+      "type": "object",
+      "properties": {
+        "assessmentId": { "type": "string", "description": "Unique assessment ID" },
+        "businessId": { "type": "string", "description": "Owning business ID" },
+        "ownerUserId": { "type": "string", "description": "Author user ID" },
+        "wasteName": { "type": "string", "description": "Designation of waste stream" },
+        "materialCategory": { "type": "string", "description": "Primary material family" },
+        "quantity": { "type": "number", "description": "Declared batch quantity" },
+        "unit": { "type": "string", "description": "Measurement unit" },
+        "generationFrequency": { "type": "string", "description": "Recurrence pattern" },
+        "physicalCondition": { "type": "string", "description": "Morphological form" },
+        "status": { "type": "string", "enum": ["DRAFT", "ANALYZING", "COMPLETED", "LISTED"], "description": "Processing status" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "isDemo": { "type": "boolean" }
+      },
+      "required": ["assessmentId", "wasteName", "materialCategory", "quantity", "unit"]
+    },
+    "WasteReport": {
+      "title": "WasteReport",
+      "description": "AI-generated circular intelligence, composition, and valuation report",
+      "type": "object",
+      "properties": {
+        "reportId": { "type": "string", "description": "Unique report ID" },
+        "assessmentId": { "type": "string", "description": "Referenced assessment ID" },
+        "businessId": { "type": "string", "description": "Origin business ID" },
+        "wasteName": { "type": "string", "description": "Name of waste stream" },
+        "materialCategory": { "type": "string", "description": "Material category" },
+        "status": { "type": "string", "description": "Report status" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "isDemo": { "type": "boolean" }
+      },
+      "required": ["reportId", "assessmentId", "wasteName"]
+    },
+    "WasteListing": {
+      "title": "WasteListing",
+      "description": "Active marketplace listing for verified industrial secondary materials",
+      "type": "object",
+      "properties": {
+        "listingId": { "type": "string", "description": "Unique listing identifier" },
+        "sellerBusinessId": { "type": "string", "description": "Seller business ID" },
+        "sellerUserId": { "type": "string", "description": "Seller user ID" },
+        "wasteName": { "type": "string", "description": "Title of material listing" },
+        "materialCategory": { "type": "string", "description": "Material family" },
+        "quantity": { "type": "number", "description": "Total available quantity" },
+        "availableQuantity": { "type": "number", "description": "Remaining quantity" },
+        "unit": { "type": "string", "description": "Unit of measurement" },
+        "status": { "type": "string", "enum": ["DRAFT", "LISTED", "RESERVED", "SOLD", "ARCHIVED"], "description": "Listing state" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "isDemo": { "type": "boolean" }
+      },
+      "required": ["listingId", "sellerBusinessId", "wasteName", "quantity", "unit", "status"]
+    },
+    "MaterialRequirement": {
+      "title": "MaterialRequirement",
+      "description": "Procurement requirement posted by authorized recycling dealers and aggregators",
+      "type": "object",
+      "properties": {
+        "requirementId": { "type": "string", "description": "Unique requirement ID" },
+        "dealerBusinessId": { "type": "string", "description": "Procuring dealer business ID" },
+        "materialCategory": { "type": "string", "description": "Target material category" },
+        "minQuantity": { "type": "number", "description": "Minimum acceptable lot" },
+        "maxQuantity": { "type": "number", "description": "Maximum procurement capacity" },
+        "unit": { "type": "string", "description": "Unit" },
+        "status": { "type": "string", "enum": ["ACTIVE", "PAUSED", "FULFILLED"], "description": "Requirement status" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "isDemo": { "type": "boolean" }
+      },
+      "required": ["requirementId", "dealerBusinessId", "materialCategory", "status"]
+    },
+    "BuyerMatch": {
+      "title": "BuyerMatch",
+      "description": "Compatibility match between a waste listing and buyer requirement",
+      "type": "object",
+      "properties": {
+        "matchId": { "type": "string", "description": "Unique match ID" },
+        "listingId": { "type": "string", "description": "Listing ID" },
+        "requirementId": { "type": "string", "description": "Requirement ID" },
+        "score": { "type": "number", "description": "Compatibility score 0-100" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "isDemo": { "type": "boolean" }
+      },
+      "required": ["matchId", "listingId", "requirementId", "score"]
+    },
+    "PurchaseRequest": {
+      "title": "PurchaseRequest",
+      "description": "Buyer order offer or intent to procure a listed secondary material lot",
+      "type": "object",
+      "properties": {
+        "requestId": { "type": "string", "description": "Unique purchase request ID" },
+        "listingId": { "type": "string", "description": "Referenced listing ID" },
+        "buyerBusinessId": { "type": "string", "description": "Buyer business ID" },
+        "sellerBusinessId": { "type": "string", "description": "Seller business ID" },
+        "requestedQuantity": { "type": "number", "description": "Requested procurement volume" },
+        "status": { "type": "string", "enum": ["PENDING", "ACCEPTED", "REJECTED", "CANCELLED", "COMPLETED"], "description": "Offer status" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "isDemo": { "type": "boolean" }
+      },
+      "required": ["requestId", "listingId", "buyerBusinessId", "sellerBusinessId", "requestedQuantity", "status"]
+    },
+    "Transaction": {
+      "title": "Transaction",
+      "description": "Commercial contract, logistics pickup schedule, and transfer record",
+      "type": "object",
+      "properties": {
+        "transactionId": { "type": "string", "description": "Unique transaction ID" },
+        "purchaseRequestId": { "type": "string", "description": "Origin purchase request ID" },
+        "listingId": { "type": "string", "description": "Listing ID" },
+        "buyerBusinessId": { "type": "string", "description": "Buyer business ID" },
+        "sellerBusinessId": { "type": "string", "description": "Seller business ID" },
+        "quantity": { "type": "number", "description": "Agreed transaction volume" },
+        "status": { "type": "string", "enum": ["TRANSACTION_CONFIRMED", "PICKUP_SCHEDULED", "IN_TRANSIT", "DELIVERED", "VERIFIED_AT_DESTINATION", "PAYMENT_COMPLETED"], "description": "Fulfillment stage" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "isDemo": { "type": "boolean" }
+      },
+      "required": ["transactionId", "purchaseRequestId", "quantity", "status"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profiles with role permissions"
+    },
+    "/businesses/{businessId}": {
+      "schema": "Business",
+      "description": "Registered businesses and recycling aggregators"
+    },
+    "/wasteAssessments/{assessmentId}": {
+      "schema": "WasteAssessment",
+      "description": "Waste stream intake assessments"
+    },
+    "/wasteReports/{reportId}": {
+      "schema": "WasteReport",
+      "description": "AI Waste Intelligence Reports"
+    },
+    "/wasteListings/{listingId}": {
+      "schema": "WasteListing",
+      "description": "Public marketplace listings"
+    },
+    "/materialRequirements/{requirementId}": {
+      "schema": "MaterialRequirement",
+      "description": "Buyer material requirements catalog"
+    },
+    "/buyerMatches/{matchId}": {
+      "schema": "BuyerMatch",
+      "description": "AI compatibility match records"
+    },
+    "/purchaseRequests/{requestId}": {
+      "schema": "PurchaseRequest",
+      "description": "Buyer procurement purchase requests"
+    },
+    "/transactions/{transactionId}": {
+      "schema": "Transaction",
+      "description": "Fulfillment and chain-of-custody transaction records"
+    }
+  }
+}
