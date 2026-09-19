@@ -18,7 +18,8 @@ import {
   Camera,
   Check,
   Plus,
-  Minus
+  Minus,
+  Trash2
 } from 'lucide-react';
 import { wasteService } from '../services/wasteService';
 import { analysisService } from '../services/analysisService';
@@ -38,33 +39,52 @@ export const WasteAssessmentWizard: React.FC<AssessmentWizardProps> = ({
   const [step, setStep] = useState<number>(1);
   const [isSpeaking, setIsSpeaking] = useState<boolean>(false);
 
-  // Form Fields - Step 1: Basic Info
-  const [wasteName, setWasteName] = useState('Cotton Fabric & Yarn Waste');
+  // Form Fields - Step 1: Basic Info (Empty by default for user entry)
+  const [wasteName, setWasteName] = useState('');
   const [materialCategory, setMaterialCategory] = useState<'Textile' | 'Plastic' | 'Metal' | 'Rubber' | 'Cardboard' | 'Chemical' | 'Other'>('Textile');
-  const [wasteType, setWasteType] = useState('Cotton Mill Spinning Waste');
-  const [quantity, setQuantity] = useState<number>(500);
+  const [wasteType, setWasteType] = useState('');
+  const [quantity, setQuantity] = useState<number | string>('');
   const [unit, setUnit] = useState<'kg' | 'tonnes' | 'litres' | 'units'>('kg');
-  const [location, setLocation] = useState(businessProfile?.city ? `${businessProfile.city}, Tamil Nadu` : 'Coimbatore, Tamil Nadu');
+  const [location, setLocation] = useState(businessProfile?.city ? `${businessProfile.city}, Tamil Nadu` : '');
   const [generationFrequency, setGenerationFrequency] = useState<'Daily' | 'Weekly' | 'Bi-weekly' | 'Monthly' | 'Quarterly' | 'Batch-wise'>('Weekly');
   const [availability, setAvailability] = useState<'Immediate' | 'Within 1 Week' | 'Within 1 Month' | 'Continuous Stream'>('Immediate');
-  const [description, setDescription] = useState('Clean post-industrial comber noil and loom selvedge edges generated during spinning.');
+  const [description, setDescription] = useState('');
+  const [step1Error, setStep1Error] = useState<string | null>(null);
 
   // Form Fields - Step 2: Quality Info
-  const [grade, setGrade] = useState('Grade A Industrial Secondary');
+  const [grade, setGrade] = useState('');
   const [moistureLevel, setMoistureLevel] = useState('Low (<5%)');
   const [contaminationLevel, setContaminationLevel] = useState('Minimal (<1%)');
   const [isSeparated, setIsSeparated] = useState<'Separated' | 'Mixed' | 'Unknown'>('Separated');
   const [condition, setCondition] = useState<'Clean' | 'Dusty' | 'Oil-contaminated' | 'Raw Scrap' | 'Processed'>('Clean');
-  const [additionalNotes, setAdditionalNotes] = useState('Packed in uniform bales, kept dry indoors.');
+  const [additionalNotes, setAdditionalNotes] = useState('');
 
-  // Form Fields - Step 3: Evidence Images
+  // Form Fields - Step 3: Evidence Images (Starts completely empty)
   const [imagesBase64, setImagesBase64] = useState<string[]>([]);
-  const [imageFiles, setImageFiles] = useState<{ url: string; fileName: string }[]>([
-    {
-      url: 'https://images.unsplash.com/photo-1598300042247-d088f8ab3a91?auto=format&fit=crop&w=800&q=80',
-      fileName: 'cotton_bale_sample.jpg'
+  const [imageFiles, setImageFiles] = useState<{ url: string; fileName: string }[]>([]);
+
+  const handleRemoveImage = (indexToRemove: number) => {
+    setImageFiles((prev) => prev.filter((_, idx) => idx !== indexToRemove));
+    setImagesBase64((prev) => prev.filter((_, idx) => idx !== indexToRemove));
+  };
+
+  const handleGoToStep2 = () => {
+    if (!wasteName.trim()) {
+      setStep1Error('Please enter a scrap item name (e.g. Cotton fabric scrap, HDPE plastic regrind, Steel turnings).');
+      return;
     }
-  ]);
+    const numQty = Number(quantity);
+    if (!quantity || isNaN(numQty) || numQty <= 0) {
+      setStep1Error('Please enter a valid available quantity greater than 0.');
+      return;
+    }
+    if (!location.trim()) {
+      setStep1Error('Please enter the plant or factory location.');
+      return;
+    }
+    setStep1Error(null);
+    setStep(2);
+  };
 
   // Voice narration helper for low-literacy users
   const toggleSpeech = (text: string) => {
@@ -207,7 +227,7 @@ export const WasteAssessmentWizard: React.FC<AssessmentWizardProps> = ({
       wasteName,
       materialCategory,
       wasteType,
-      quantity,
+      quantity: Number(quantity) || 100,
       unit,
       location,
       generationFrequency,
@@ -419,6 +439,14 @@ export const WasteAssessmentWizard: React.FC<AssessmentWizardProps> = ({
             <p className="text-sm text-slate-600">Pick the category and how much scrap material you have on hand.</p>
           </div>
 
+          {/* Step 1 Error Alert */}
+          {step1Error && (
+            <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-300 text-amber-900 text-xs font-semibold flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+              <span>{step1Error}</span>
+            </div>
+          )}
+
           <div className="space-y-4">
             {/* Visual Category Selector */}
             <div>
@@ -439,7 +467,7 @@ export const WasteAssessmentWizard: React.FC<AssessmentWizardProps> = ({
                     key={item.cat}
                     type="button"
                     onClick={() => setMaterialCategory(item.cat as any)}
-                    className={`p-3 rounded-xl border text-left flex items-center gap-2.5 transition-all ${
+                    className={`p-3 rounded-xl border text-left flex items-center gap-2.5 transition-all cursor-pointer ${
                       materialCategory === item.cat
                         ? 'border-emerald-600 bg-emerald-50 text-emerald-950 font-bold ring-2 ring-emerald-500/20'
                         : 'border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100'
@@ -461,14 +489,17 @@ export const WasteAssessmentWizard: React.FC<AssessmentWizardProps> = ({
                   type="text"
                   required
                   value={wasteName}
-                  onChange={(e) => setWasteName(e.target.value)}
+                  onChange={(e) => {
+                    setWasteName(e.target.value);
+                    if (step1Error) setStep1Error(null);
+                  }}
                   placeholder="e.g. Cotton fabric cuts, HDPE plastic drums, iron turning scrap"
                   className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm text-slate-900 focus:bg-white focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 font-medium"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Specific Sub-type</label>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Specific Sub-type (Optional)</label>
                 <input
                   type="text"
                   value={wasteType}
@@ -486,13 +517,17 @@ export const WasteAssessmentWizard: React.FC<AssessmentWizardProps> = ({
                     min="1"
                     required
                     value={quantity}
-                    onChange={(e) => setQuantity(Number(e.target.value))}
+                    onChange={(e) => {
+                      setQuantity(e.target.value === '' ? '' : Number(e.target.value));
+                      if (step1Error) setStep1Error(null);
+                    }}
+                    placeholder="e.g. 500"
                     className="w-2/3 px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm text-slate-900 focus:bg-white focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 font-bold"
                   />
                   <select
                     value={unit}
                     onChange={(e) => setUnit(e.target.value as any)}
-                    className="w-1/3 px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm text-slate-900 focus:bg-white focus:outline-none focus:border-emerald-500 font-bold"
+                    className="w-1/3 px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm text-slate-900 focus:bg-white focus:outline-none focus:border-emerald-500 font-bold cursor-pointer"
                   >
                     <option value="kg">kg (Kilograms)</option>
                     <option value="tonnes">Tonnes</option>
@@ -508,7 +543,10 @@ export const WasteAssessmentWizard: React.FC<AssessmentWizardProps> = ({
                   type="text"
                   required
                   value={location}
-                  onChange={(e) => setLocation(e.target.value)}
+                  onChange={(e) => {
+                    setLocation(e.target.value);
+                    if (step1Error) setStep1Error(null);
+                  }}
                   placeholder="e.g. Coimbatore, Tamil Nadu"
                   className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm text-slate-900 focus:bg-white focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 font-medium"
                 />
@@ -519,7 +557,7 @@ export const WasteAssessmentWizard: React.FC<AssessmentWizardProps> = ({
                 <select
                   value={generationFrequency}
                   onChange={(e) => setGenerationFrequency(e.target.value as any)}
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm text-slate-900 focus:bg-white focus:outline-none focus:border-emerald-500 font-medium"
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm text-slate-900 focus:bg-white focus:outline-none focus:border-emerald-500 font-medium cursor-pointer"
                 >
                   <option value="Daily">Every Day (Daily)</option>
                   <option value="Weekly">Every Week (Weekly Batch)</option>
@@ -546,7 +584,7 @@ export const WasteAssessmentWizard: React.FC<AssessmentWizardProps> = ({
           <div className="flex justify-end gap-3 pt-4 border-t border-slate-200">
             <button
               type="button"
-              onClick={() => setStep(2)}
+              onClick={handleGoToStep2}
               className="px-6 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm flex items-center gap-2 shadow-md hover:shadow transition-all cursor-pointer"
             >
               <span>Next: Quality & Condition</span>
@@ -719,7 +757,7 @@ export const WasteAssessmentWizard: React.FC<AssessmentWizardProps> = ({
           </div>
 
           {/* Previews */}
-          {imageFiles.length > 0 && (
+          {imageFiles.length > 0 ? (
             <div>
               <div className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2 flex items-center justify-between">
                 <span>Selected Photos ({imageFiles.length})</span>
@@ -733,12 +771,26 @@ export const WasteAssessmentWizard: React.FC<AssessmentWizardProps> = ({
                       alt={img.fileName}
                       className="w-full h-28 object-cover group-hover:scale-105 transition-transform"
                     />
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveImage(i)}
+                      className="absolute top-1.5 right-1.5 p-1 bg-red-600/90 hover:bg-red-700 text-white rounded-lg shadow transition-transform active:scale-95 cursor-pointer"
+                      title="Remove photo"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
                     <div className="p-2 text-[11px] text-slate-700 truncate bg-white font-medium">
                       {img.fileName}
                     </div>
                   </div>
                 ))}
               </div>
+            </div>
+          ) : (
+            <div className="p-4 rounded-xl bg-slate-50 border border-dashed border-slate-300 text-center">
+              <p className="text-xs text-slate-500 font-medium">
+                No photos selected yet. You can upload photos or continue directly with declared details.
+              </p>
             </div>
           )}
 

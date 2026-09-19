@@ -17,8 +17,9 @@ interface AuthContextType {
     companyName: string,
     city: string,
     phone?: string
-  ) => Promise<void>;
-  loginUser: (email: string, pass: string) => Promise<void>;
+  ) => Promise<UserProfile>;
+  loginUser: (email: string, pass: string) => Promise<UserProfile | null>;
+  demoLogin: (role: UserRole) => UserProfile;
   resetPassword: (email: string) => Promise<void>;
   logoutUser: () => Promise<void>;
   refreshProfile: () => Promise<void>;
@@ -33,9 +34,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState<boolean>(true);
 
   // Load user data from Supabase profiles table
-  const loadUserData = async (user: SupabaseUser) => {
+  const loadUserData = async (user: SupabaseUser): Promise<UserProfile | null> => {
     try {
-      if (!isSupabaseConfigured()) return;
+      if (!isSupabaseConfigured()) return null;
 
       const { data: profileData, error: profileErr } = await supabase
         .from('profiles')
@@ -48,7 +49,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           uid: profileData.id,
           name: profileData.full_name || user.email?.split('@')[0] || 'User',
           email: profileData.email || user.email || '',
-          role: profileData.role as UserRole,
+          role: (profileData.role as UserRole) || 'industry',
           businessId: profileData.business_id,
           phone: profileData.phone,
           location: profileData.location,
@@ -79,6 +80,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             updatedAt: profileData.updated_at
           });
         }
+        return uData;
       } else {
         // Build profile from user metadata if available
         const userMeta = user.user_metadata || {};
@@ -136,9 +138,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             updatedAt: now
           });
         }
+        return freshProf;
       }
     } catch (err) {
       console.warn('Error loading user profile from Supabase:', err);
+      return null;
     }
   };
 
@@ -161,12 +165,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       });
 
-      const { data: authListener } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
         if (!mounted) return;
         if (session?.user) {
           setCurrentUser(session.user);
           await loadUserData(session.user);
-        } else {
+        } else if (event === 'SIGNED_OUT') {
           setCurrentUser(null);
           setUserProfile(null);
           setBusinessProfile(null);
@@ -230,26 +234,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       throw error;
     }
 
+    // Safe development logging
+    console.log('[Auth] Supabase signUp response:', {
+      hasUser: Boolean(data?.user),
+      hasSession: Boolean(data?.session),
+      identitiesCount: data?.user?.identities?.length
+    });
+
     // Check if user already exists (Supabase returns empty identities array for existing users on signUp)
     if (data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
       throw new Error('An account with this email already exists. Please sign in instead.');
     }
 
-    let user = data.user;
-    let session = data.session;
-
-    // If session was not immediately returned (email confirmation disabled in Supabase), sign in to establish active session
-    if (!session && user) {
-      const signInRes = await supabase.auth.signInWithPassword({
-        email: cleanEmail,
-        password: pass
-      });
-      if (signInRes.data?.session) {
-        session = signInRes.data.session;
-        user = signInRes.data.user || user;
-      }
-    }
-
+    const user = data.user;
     if (!user) {
       throw new Error('Registration failed. Please check your credentials and try again.');
     }
@@ -314,14 +311,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setCurrentUser(user);
 
     await logAuditEvent(user.id, role, 'REGISTER_AND_CREATE_BUSINESS', 'user', user.id, { email: cleanEmail, role, companyName: companyName.trim() });
+    return newProfile;
   };
 
-  const loginUser = async (email: string, pass: string) => {
+  const loginUser = async (email: string, pass: string): Promise<UserProfile | null> => {
     const cleanEmail = email.trim().toLowerCase();
     if (!isSupabaseConfigured()) {
       throw new Error('Database connection is not configured.');
     }
-
     const { data, error } = await supabase.auth.signInWithPassword({
       email: cleanEmail,
       password: pass
@@ -330,13 +327,70 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (error.message?.toLowerCase().includes('invalid login credentials')) {
         throw new Error('Invalid email or password. Please check your credentials or create an account.');
       }
+      if (error.message?.toLowerCase().includes('email not confirmed')) {
+        throw new Error('Email not confirmed in Supabase. Please ensure "Confirm email" is turned OFF in your Supabase Auth settings or sign up with a new email.');
+      }
       throw error;
     }
     if (data.user) {
       setCurrentUser(data.user);
-      await loadUserData(data.user);
-      await logAuditEvent(data.user.id, userProfile?.role || 'industry', 'LOGIN', 'user', data.user.id, { email: cleanEmail });
+      const prof = await loadUserData(data.user);
+      await logAuditEvent(data.user.id, prof?.role || 'industry', 'LOGIN', 'user', data.user.id, { email: cleanEmail });
+      return prof;
     }
+    return null;
+  };
+
+  const demoLogin = (role: UserRole): UserProfile => {
+    const demoId = `demo-${role}-${Date.now().toString().slice(-4)}`;
+    const roleProfiles: Record<UserRole, { name: string; company: string; city: string; category: string }> = {
+      industry: { name: 'Karthik Raja', company: 'Kongu Cotton & Spinning Mills Ltd', city: 'Coimbatore', category: 'Textile & Yarn Spinning' },
+      dealer: { name: 'Murugan Traders', company: 'Murugan Scrap Aggregators', city: 'Tiruppur', category: 'Industrial Scrap Aggregation' },
+      recycler: { name: 'Dr. S. Sundaram', company: 'Kongu Green Polymer Processors', city: 'Erode', category: 'Secondary Polymers & Circular Materials' },
+      consumer: { name: 'Ananya Sharma', company: 'EcoShopper Household', city: 'Salem', category: 'Upcycled Goods Consumer' },
+      admin: { name: 'Platform Admin', company: 'WasteXchange Compliance Operations', city: 'Chennai', category: 'Platform Administration & Rule Governance' },
+      owner: { name: 'Platform Owner', company: 'WasteXchange Networks', city: 'Coimbatore', category: 'Executive Administration' },
+    };
+
+    const info = roleProfiles[role] || roleProfiles.industry;
+    const now = new Date().toISOString();
+
+    const demoProfile: UserProfile = {
+      uid: demoId,
+      name: info.name,
+      email: `${role}.demo@wastexchange.in`,
+      role,
+      businessId: `biz-${role}-01`,
+      location: info.city,
+      phone: '+91 98421 00000',
+      isVerified: true,
+      status: 'active',
+      createdAt: now,
+      updatedAt: now
+    };
+
+    const demoBusiness: BusinessProfile = {
+      businessId: `biz-${role}-01`,
+      ownerUserId: demoId,
+      businessName: info.company,
+      businessType: role,
+      role,
+      industryCategory: info.category,
+      description: `${info.company} operations located in ${info.city}`,
+      phone: '+91 98421 00000',
+      email: `${role}.demo@wastexchange.in`,
+      address: `${info.city} Industrial Zone`,
+      city: info.city,
+      state: 'Tamil Nadu',
+      country: 'India',
+      verificationStatus: 'VERIFIED',
+      createdAt: now,
+      updatedAt: now
+    };
+
+    setUserProfile(demoProfile);
+    setBusinessProfile(demoBusiness);
+    return demoProfile;
   };
 
   const resetPassword = async (email: string) => {
@@ -374,6 +428,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         loading,
         registerUser,
         loginUser,
+        demoLogin,
         resetPassword,
         logoutUser,
         refreshProfile

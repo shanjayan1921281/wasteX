@@ -62,7 +62,7 @@ export default function App() {
       } else if (userProfile.role === 'recycler') {
         setCurrentRoute('/recycler/dashboard');
       } else if (userProfile.role === 'consumer') {
-        setCurrentRoute('/consumer/marketplace');
+        setCurrentRoute('/consumer/dashboard');
       } else if (userProfile.role === 'admin') {
         setCurrentRoute('/admin/dashboard');
       } else {
@@ -204,14 +204,15 @@ export default function App() {
         isOpen={authModalOpen}
         initialMode={authModalMode}
         onClose={() => setAuthModalOpen(false)}
-        onSuccess={() => {
-          if (userProfile?.role === 'dealer') {
+        onSuccess={(registeredRole) => {
+          const targetRole = registeredRole || userProfile?.role || 'industry';
+          if (targetRole === 'dealer') {
             setCurrentRoute('/dealer/dashboard');
-          } else if (userProfile?.role === 'recycler') {
+          } else if (targetRole === 'recycler') {
             setCurrentRoute('/recycler/dashboard');
-          } else if (userProfile?.role === 'consumer') {
-            setCurrentRoute('/consumer/marketplace');
-          } else if (userProfile?.role === 'admin') {
+          } else if (targetRole === 'consumer') {
+            setCurrentRoute('/consumer/dashboard');
+          } else if (targetRole === 'admin') {
             setCurrentRoute('/admin/dashboard');
           } else {
             setCurrentRoute('/industry/dashboard');

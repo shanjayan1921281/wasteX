@@ -44,17 +44,7 @@ export const authService = {
       throw new Error('An account with this email already exists. Please sign in instead.');
     }
 
-    let user = authData.user;
-    if (!authData.session && user) {
-      const signInRes = await supabase.auth.signInWithPassword({
-        email: cleanEmail,
-        password
-      });
-      if (signInRes.data?.user) {
-        user = signInRes.data.user;
-      }
-    }
-
+    const user = authData.user;
     if (!user) throw new Error('User creation failed');
 
     const businessId = `biz-${user.id.slice(0, 8)}`;

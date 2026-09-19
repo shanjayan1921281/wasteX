@@ -81,6 +81,15 @@ export const MarketplaceView: React.FC<MarketplaceProps> = ({
 
   useEffect(() => {
     loadMarketplaceData();
+
+    const handleListingUpdate = () => {
+      loadMarketplaceData();
+    };
+
+    window.addEventListener('wastexchange_listing_saved', handleListingUpdate);
+    return () => {
+      window.removeEventListener('wastexchange_listing_saved', handleListingUpdate);
+    };
   }, []);
 
   // Filter listings

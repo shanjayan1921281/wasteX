@@ -25,7 +25,7 @@ interface AuthModalProps {
   isOpen: boolean;
   initialMode: 'login' | 'register';
   onClose: () => void;
-  onSuccess: () => void;
+  onSuccess: (role?: UserRole) => void;
 }
 
 export const AuthModal: React.FC<AuthModalProps> = ({
@@ -34,7 +34,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   onClose,
   onSuccess
 }) => {
-  const { loginUser, registerUser, resetPassword } = useAuth();
+  const { loginUser, registerUser, demoLogin, resetPassword } = useAuth();
   const [mode, setMode] = useState<'login' | 'register' | 'forgot'>(initialMode);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -50,6 +50,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const isSubmittingRef = useRef(false);
 
   if (!isOpen) return null;
+
+  const handleDemoRoleClick = (targetRole: UserRole) => {
+    try {
+      const prof = demoLogin(targetRole);
+      onSuccess(prof.role);
+      onClose();
+    } catch (err: any) {
+      setError(err.message || 'Demo login failed');
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -71,8 +81,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         if (!email.trim() || !password.trim()) {
           throw new Error('Please enter your email and password.');
         }
-        await loginUser(email.trim(), password);
-        onSuccess();
+        const loggedUser = await loginUser(email.trim(), password);
+        onSuccess(loggedUser?.role || 'industry');
         onClose();
       } else {
         if (!name.trim()) {
@@ -84,7 +94,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         if (password.length < 6) {
           throw new Error('Password must be at least 6 characters long.');
         }
-        await registerUser(
+        const regUser = await registerUser(
           email.trim(), 
           password, 
           name.trim(), 
@@ -93,7 +103,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           city.trim() || 'Coimbatore',
           phone.trim()
         );
-        onSuccess();
+        onSuccess(regUser?.role || role);
         onClose();
       }
     } catch (err: any) {
@@ -401,6 +411,48 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             </span>
           </button>
         </form>
+
+        {mode === 'login' && (
+          <div className="mt-6 pt-4 border-t border-slate-100">
+            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider text-center mb-2.5">
+              Quick Role Test Logins
+            </p>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+              <button
+                type="button"
+                onClick={() => handleDemoRoleClick('industry')}
+                className="p-2 rounded-lg bg-slate-50 hover:bg-emerald-50 hover:text-emerald-800 border border-slate-200 text-slate-700 text-xs font-semibold flex flex-col items-center gap-1 transition-colors cursor-pointer text-center"
+              >
+                <Factory className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Factory Mill</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleDemoRoleClick('dealer')}
+                className="p-2 rounded-lg bg-slate-50 hover:bg-teal-50 hover:text-teal-800 border border-slate-200 text-slate-700 text-xs font-semibold flex flex-col items-center gap-1 transition-colors cursor-pointer text-center"
+              >
+                <Truck className="w-3.5 h-3.5 text-teal-600" />
+                <span>Scrap Dealer</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleDemoRoleClick('recycler')}
+                className="p-2 rounded-lg bg-slate-50 hover:bg-emerald-50 hover:text-emerald-800 border border-slate-200 text-slate-700 text-xs font-semibold flex flex-col items-center gap-1 transition-colors cursor-pointer text-center"
+              >
+                <Recycle className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Recycler</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleDemoRoleClick('consumer')}
+                className="p-2 rounded-lg bg-slate-50 hover:bg-emerald-50 hover:text-emerald-800 border border-slate-200 text-slate-700 text-xs font-semibold flex flex-col items-center gap-1 transition-colors cursor-pointer text-center"
+              >
+                <ShoppingBag className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Consumer</span>
+              </button>
+            </div>
+          </div>
+        )}
 
         <div className="mt-5 pt-4 border-t border-slate-100 text-center text-xs text-slate-500">
           {mode === 'login' ? (

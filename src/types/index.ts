@@ -316,6 +316,7 @@ export interface PurchaseRequest {
   buyerUserId: string;
   requestedQuantity: number;
   unit: string;
+  proposedPrice?: string | number;
   proposedPickupDate: string;
   message: string;
   status: 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'CANCELLED' | 'COMPLETED';
