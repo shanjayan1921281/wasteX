@@ -14,9 +14,11 @@ import {
   Truck, 
   ShieldCheck, 
   X,
-  PackageCheck
+  PackageCheck,
+  RefreshCw
 } from 'lucide-react';
 import type { RecycledProduct, CartItem, ConsumerOrder } from '../types';
+import { productService, orderService } from '../services/recyclerService';
 
 export const ConsumerMarketplaceView: React.FC = () => {
   const { userProfile } = useAuth();
@@ -33,27 +35,56 @@ export const ConsumerMarketplaceView: React.FC = () => {
   const [orderComplete, setOrderComplete] = useState<ConsumerOrder | null>(null);
 
   // Checkout form
-  const [name, setName] = useState(userProfile?.name || '');
-  const [email, setEmail] = useState(userProfile?.email || '');
-  const [phone, setPhone] = useState('');
-  const [address, setAddress] = useState(userProfile?.location || '');
+  const [name, setName] = useState(userProfile?.name || 'Vimal Kumar');
+  const [email, setEmail] = useState(userProfile?.email || 'vimal.buyer@example.com');
+  const [phone, setPhone] = useState('+91 98421 77320');
+  const [address, setAddress] = useState(userProfile?.location || '42 Circular Economy Avenue, RS Puram, Coimbatore, TN');
   const [placingOrder, setPlacingOrder] = useState(false);
 
-  const categories = ['All', 'Fashion & Apparel', 'Home & Living', 'Consumer Goods', 'Packaging', 'Industrial Feedstock'];
+  const categories = ['All', 'Fashion & Apparel', 'Home & Living', 'Consumer Goods', 'Packaging', 'Building & Construction', 'Industrial Feedstock'];
 
   const fetchProducts = async () => {
     try {
-      let url = '/api/products';
-      const params = new URLSearchParams();
-      if (selectedCategory !== 'All') params.append('category', selectedCategory);
-      if (searchQuery) params.append('search', searchQuery);
-      if (params.toString()) url += `?${params.toString()}`;
+      setLoading(true);
+      // 1. Get from persistent local & cloud product service
+      const localProducts = await productService.getProducts(selectedCategory, searchQuery);
+      
+      // 2. Also fetch from Express server in-memory API
+      let apiProducts: RecycledProduct[] = [];
+      try {
+        let url = '/api/products';
+        const params = new URLSearchParams();
+        if (selectedCategory !== 'All') params.append('category', selectedCategory);
+        if (searchQuery) params.append('search', searchQuery);
+        if (params.toString()) url += `?${params.toString()}`;
 
-      const res = await fetch(url);
-      const data = await res.json();
-      if (data.success && data.data) {
-        setProducts(data.data);
+        const res = await fetch(url);
+        const data = await res.json();
+        if (data.success && Array.isArray(data.data)) {
+          apiProducts = data.data;
+        }
+      } catch (e) {
+        console.warn('API fetch warning:', e);
       }
+
+      // Merge unique by productId
+      const map = new Map<string, RecycledProduct>();
+      [...localProducts, ...apiProducts].forEach(p => map.set(p.productId, p));
+      let merged = Array.from(map.values());
+
+      if (selectedCategory !== 'All') {
+        merged = merged.filter(p => p.category.toLowerCase() === selectedCategory.toLowerCase());
+      }
+      if (searchQuery) {
+        const q = searchQuery.toLowerCase();
+        merged = merged.filter(p => 
+          p.title.toLowerCase().includes(q) || 
+          p.sourceMaterial.toLowerCase().includes(q) || 
+          p.description.toLowerCase().includes(q)
+        );
+      }
+
+      setProducts(merged);
     } catch (err) {
       console.error('Failed to load products:', err);
     } finally {
@@ -63,6 +94,15 @@ export const ConsumerMarketplaceView: React.FC = () => {
 
   useEffect(() => {
     fetchProducts();
+
+    const handleProductCreated = () => {
+      fetchProducts();
+    };
+
+    window.addEventListener('wastexchange_product_created', handleProductCreated);
+    return () => {
+      window.removeEventListener('wastexchange_product_created', handleProductCreated);
+    };
   }, [selectedCategory, searchQuery]);
 
   const addToCart = (product: RecycledProduct) => {
@@ -96,49 +136,71 @@ export const ConsumerMarketplaceView: React.FC = () => {
 
   const cartTotal = cart.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
   const cartItemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
-  const totalCo2Saved = cart.reduce((sum, item) => sum + (item.product.environmentalSavings.co2KgSaved * item.quantity), 0);
+  const totalCo2Saved = cart.reduce((sum, item) => sum + ((item.product.environmentalSavings?.co2KgSaved || 5) * item.quantity), 0);
 
   const handlePlaceOrder = async (e: React.FormEvent) => {
     e.preventDefault();
     if (cart.length === 0) return;
     setPlacingOrder(true);
 
-    try {
-      const itemsPayload = cart.map(i => ({
+    const newOrder: ConsumerOrder = {
+      orderId: `ord-${Date.now()}`,
+      consumerUserId: userProfile?.uid || 'usr-consumer-01',
+      consumerName: name || 'Demo Consumer',
+      consumerEmail: email || 'buyer@example.com',
+      shippingAddress: {
+        street: address,
+        city: 'Coimbatore',
+        state: 'Tamil Nadu',
+        pincode: '641002',
+        phone
+      },
+      items: cart.map(i => ({
         productId: i.product.productId,
         productTitle: i.product.title,
+        category: i.product.category,
         price: i.product.price,
         quantity: i.quantity,
+        imageUrl: i.product.images?.[0] || '',
         sourceMaterial: i.product.sourceMaterial,
         recyclerName: i.product.recyclerName,
         subtotal: i.product.price * i.quantity
-      }));
+      })),
+      totalAmount: cartTotal,
+      status: 'ORDER_PLACED',
+      totalEcoImpact: {
+        co2SavedKg: Math.round(totalCo2Saved * 10) / 10,
+        plasticAvoidedKg: Math.round(cart.reduce((s, i) => s + ((i.product.environmentalSavings?.virginMaterialAvoidedKg || 1) * i.quantity), 0) * 10) / 10
+      },
+      trackingNumber: `TRK-WX-${Date.now().toString().slice(-6)}`,
+      createdAt: new Date().toISOString()
+    };
 
-      const res = await fetch('/api/orders', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          consumerUserId: userProfile?.uid || '',
-          consumerName: name,
-          consumerEmail: email,
-          shippingAddress: {
-            street: address,
-            city: 'Coimbatore',
-            state: 'Tamil Nadu',
-            pincode: '641002',
-            phone
-          },
-          items: itemsPayload
-        })
-      });
+    try {
+      // 1. Save to local orderService & Supabase
+      await orderService.createOrder(newOrder);
 
-      const data = await res.json();
-      if (data.success && data.order) {
-        setOrderComplete(data.order);
-        setCart([]);
-        setIsCheckingOut(false);
-        await fetchProducts(); // Refresh stock levels
+      // 2. Post to API
+      try {
+        await fetch('/api/orders', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            consumerUserId: newOrder.consumerUserId,
+            consumerName: newOrder.consumerName,
+            consumerEmail: newOrder.consumerEmail,
+            shippingAddress: newOrder.shippingAddress,
+            items: newOrder.items
+          })
+        });
+      } catch (apiErr) {
+        console.warn('Order API sync warning:', apiErr);
       }
+
+      setOrderComplete(newOrder);
+      setCart([]);
+      setIsCheckingOut(false);
+      await fetchProducts(); // Refresh stock levels
     } catch (err) {
       console.error('Failed to place order:', err);
     } finally {
@@ -226,9 +288,13 @@ export const ConsumerMarketplaceView: React.FC = () => {
               <div>
                 <div className="relative h-48 bg-neutral-100 overflow-hidden">
                   <img
-                    src={product.images[0]}
+                    src={product.images?.[0] || 'https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&w=800&q=80'}
                     alt={product.title}
+                    referrerPolicy="no-referrer"
                     className="w-full h-full object-cover"
+                    onError={(e: any) => {
+                      e.currentTarget.src = 'https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&w=800&q=80';
+                    }}
                   />
                   <div className="absolute top-2 left-2">
                     <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-neutral-900/80 text-white backdrop-blur-xs">

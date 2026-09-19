@@ -492,13 +492,160 @@ Generate a crisp, professional 2-3 sentence AI explanation describing why this m
   // HACKATHON CORE LIFECYCLE: DATA STORES & REST ENDPOINTS
   // ==========================================================================
 
-  // In-memory persistent stores (start completely clean, no demo/sample data)
+  // In-memory persistent stores with rich seed demo data for prototype evaluation
   const inMemorySubmissions = new Map<string, any>();
   const inMemoryReports = new Map<string, any>();
   const inMemoryEligibility = new Map<string, EligibilityResult>();
   const inMemoryRecycleRequests = new Map<string, RecyclingRequest>();
   const inMemoryProducts = new Map<string, RecycledProduct>();
   const inMemoryOrders = new Map<string, ConsumerOrder>();
+
+  // Seed initial demo requests for Recycler Facility
+  inMemoryRecycleRequests.set('rec-req-101', {
+    requestId: 'rec-req-101',
+    wasteAssessmentId: 'assess-tx-01',
+    wasteName: 'Baled Comber Cotton Spinning Waste',
+    materialCategory: 'Textiles',
+    quantity: 1200,
+    unit: 'kg',
+    wasteOwnerUserId: 'user-industry-01',
+    wasteOwnerName: 'Kongu Cotton & Spinning Mills',
+    wasteOwnerLocation: 'Coimbatore, Tamil Nadu',
+    recyclerId: 'rec-01',
+    recyclerName: 'Kongu Green Polymer & Fibre Processors',
+    status: 'PROCESSED',
+    stageHistory: [
+      { stage: 'SUBMITTED', timestamp: new Date(Date.now() - 86400000 * 4).toISOString(), note: 'Batch submitted from mill waste stream', updatedBy: 'Kongu Cotton Mills' },
+      { stage: 'ACCEPTED', timestamp: new Date(Date.now() - 86400000 * 3).toISOString(), note: 'Inspection approved: 98.4% cotton purity', updatedBy: 'Kongu Recyclers QC' },
+      { stage: 'COLLECTED', timestamp: new Date(Date.now() - 86400000 * 2).toISOString(), note: 'Logistics dispatched with GPS tracking #TRK-CBE-92', updatedBy: 'WasteXchange Fleet' },
+      { stage: 'PROCESSING', timestamp: new Date(Date.now() - 86400000 * 1).toISOString(), note: 'Fibre opening and carding stage in progress', updatedBy: 'Facility Operator 2' },
+      { stage: 'PROCESSED', timestamp: new Date().toISOString(), note: 'Regenerated organic yarn sliver ready for product conversion', updatedBy: 'Lead Engineer' }
+    ],
+    processingDetails: {
+      temperatureCelsius: 85,
+      energyKwh: 340,
+      yieldPercentage: 92,
+      outputGrade: 'Grade-A Regenerated Open-End Yarn Sliver'
+    },
+    createdAt: new Date(Date.now() - 86400000 * 4).toISOString(),
+    updatedAt: new Date().toISOString()
+  });
+
+  inMemoryRecycleRequests.set('rec-req-102', {
+    requestId: 'rec-req-102',
+    wasteAssessmentId: 'assess-pl-02',
+    wasteName: 'High-Density Polyethylene (HDPE) Regrind Flakes',
+    materialCategory: 'Plastics & Polymers',
+    quantity: 3500,
+    unit: 'kg',
+    wasteOwnerUserId: 'user-industry-02',
+    wasteOwnerName: 'Premier Polymers & Blow-Moulding Unit',
+    wasteOwnerLocation: 'Erode, Tamil Nadu',
+    recyclerId: 'rec-01',
+    recyclerName: 'Kongu Green Polymer & Fibre Processors',
+    status: 'PROCESSING',
+    stageHistory: [
+      { stage: 'SUBMITTED', timestamp: new Date(Date.now() - 86400000 * 2).toISOString(), note: 'Post-industrial clean drum trim scrap', updatedBy: 'Premier Polymers' },
+      { stage: 'ACCEPTED', timestamp: new Date(Date.now() - 86400000 * 1.5).toISOString(), note: 'Density 0.955 g/cm³ verified with zero PVC contamination', updatedBy: 'Kongu Recyclers QC' },
+      { stage: 'COLLECTED', timestamp: new Date(Date.now() - 86400000 * 1).toISOString(), note: 'Transport delivered to Erode sorting bay', updatedBy: 'WasteXchange Fleet' },
+      { stage: 'PROCESSING', timestamp: new Date().toISOString(), note: 'Hot-wash cycle and twin-screw extrusion compounding', updatedBy: 'Plant Supervisor' }
+    ],
+    createdAt: new Date(Date.now() - 86400000 * 2).toISOString(),
+    updatedAt: new Date().toISOString()
+  });
+
+  // Seed initial recycled products in Consumer Marketplace
+  inMemoryProducts.set('prod-seed-01', {
+    productId: 'prod-seed-01',
+    title: '100% Recycled Cotton Heavy Canvas Eco Tote',
+    category: 'Fashion & Apparel',
+    price: 349,
+    currency: 'INR',
+    stock: 85,
+    unit: 'pieces',
+    wasteOriginName: 'Baled Comber Cotton Spinning Waste',
+    sourceMaterial: 'Regenerated Mill Spinning Comber Cotton',
+    recyclerId: 'rec-01',
+    recyclerName: 'Kongu Green Polymer & Fibre Processors',
+    description: 'Durable 380 GSM everyday carry tote bag woven purely from diverted textile mill spinning secondary fibers. Zero virgin cotton used.',
+    images: [
+      'https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&w=800&q=80'
+    ],
+    environmentalSavings: {
+      co2KgSaved: 4.8,
+      virginMaterialAvoidedKg: 0.4,
+      waterLitersSaved: 1200
+    },
+    specifications: {
+      'Fabric Weight': '380 GSM Heavy Weave',
+      'Handle Reinforcement': 'Cross-stitch Bar-tacked',
+      'Traceability Source': 'Kongu Cotton Mills, Coimbatore',
+      'Eco Certification': 'Circular Material Verified (WasteXchange ISO-14021)'
+    },
+    featured: true,
+    createdAt: new Date(Date.now() - 86400000 * 3).toISOString()
+  });
+
+  inMemoryProducts.set('prod-seed-02', {
+    productId: 'prod-seed-02',
+    title: 'Modular High-Density Recycled Interlocking Paver Tile',
+    category: 'Building & Construction',
+    price: 480,
+    currency: 'INR',
+    stock: 250,
+    unit: 'sq ft',
+    wasteOriginName: 'High-Density Polyethylene Regrind Flakes',
+    sourceMaterial: 'Decontaminated Post-Industrial HDPE Regrind',
+    recyclerId: 'rec-01',
+    recyclerName: 'Kongu Green Polymer & Fibre Processors',
+    description: 'Heavy duty, weather-resistant interlocking ground pavers for parking bays and walkways made from re-engineered HDPE scrap.',
+    images: [
+      'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=800&q=80'
+    ],
+    environmentalSavings: {
+      co2KgSaved: 14.2,
+      virginMaterialAvoidedKg: 6.5,
+      waterLitersSaved: 350
+    },
+    specifications: {
+      'Load Capacity': 'Up to 25 Tonnes / sq.m',
+      'UV Stability': 'Class 4 (10+ Year Outdoor Life)',
+      'Water Absorption': '< 0.02%',
+      'Origin Batch': 'Premier Polymers, Erode'
+    },
+    featured: true,
+    createdAt: new Date(Date.now() - 86400000 * 2).toISOString()
+  });
+
+  inMemoryProducts.set('prod-seed-03', {
+    productId: 'prod-seed-03',
+    title: 'Architectural Anodized Aluminium Desk Organizer Set',
+    category: 'Home & Living',
+    price: 890,
+    currency: 'INR',
+    stock: 40,
+    unit: 'sets',
+    wasteOriginName: 'Aluminium Extrusion Off-Cuts (6063)',
+    sourceMaterial: 'Precision Remelted Grade 6063 Aluminium Alloy',
+    recyclerId: 'rec-01',
+    recyclerName: 'Kongu Green Polymer & Fibre Processors',
+    description: 'Precision CNC-machined minimalist desktop organizer set manufactured from structural extrusion cutoffs.',
+    images: [
+      'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?auto=format&fit=crop&w=800&q=80'
+    ],
+    environmentalSavings: {
+      co2KgSaved: 18.5,
+      virginMaterialAvoidedKg: 2.2,
+      waterLitersSaved: 480
+    },
+    specifications: {
+      'Finish': 'Matte Bead-Blasted Gunmetal',
+      'Recycled Content': '100% Remelt Secondary Alloy',
+      'Origin Batch': 'Apex Precision Extrusions'
+    },
+    featured: true,
+    createdAt: new Date(Date.now() - 86400000 * 1).toISOString()
+  });
 
   // --------------------------------------------------------------------------
   // 1. Waste Upload: Submit waste for analysis

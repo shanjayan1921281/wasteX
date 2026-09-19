@@ -491,11 +491,14 @@ export interface RecyclingRequest {
     updatedBy: string;
   }[];
   processingDetails?: {
-    processMethod: string;
-    yieldPercentage: number;
+    processMethod?: string;
+    yieldPercentage?: number;
     processingStartDate?: string;
     processingEndDate?: string;
-    outputMaterial: string;
+    outputMaterial?: string;
+    outputGrade?: string;
+    temperatureCelsius?: number;
+    energyKwh?: number;
   };
   convertedProductId?: string;
   createdAt: string;
@@ -547,8 +550,10 @@ export interface ConsumerOrder {
   items: {
     productId: string;
     productTitle: string;
+    category?: string;
     price: number;
     quantity: number;
+    imageUrl?: string;
     sourceMaterial: string;
     recyclerName: string;
     subtotal: number;
@@ -561,6 +566,6 @@ export interface ConsumerOrder {
   status: 'ORDER_PLACED' | 'CONFIRMED' | 'SHIPPED' | 'DELIVERED';
   trackingNumber: string;
   createdAt: string;
-  updatedAt: string;
+  updatedAt?: string;
 }
 

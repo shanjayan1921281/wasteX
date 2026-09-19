@@ -132,7 +132,9 @@ export default function App() {
 
         {currentRoute === '/recycler/dashboard' && (
           <div className="bg-neutral-50 min-h-screen text-neutral-900">
-            <RecyclerDashboard />
+            <RecyclerDashboard 
+              onNavigateToConsumerMarketplace={() => setCurrentRoute('/consumer/dashboard')} 
+            />
           </div>
         )}
 
